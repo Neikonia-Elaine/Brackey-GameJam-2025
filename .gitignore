@@ -1,0 +1,55 @@
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+UserSettings/
+
+# AssetBundle 缓存
+Assets/StreamingAssets/aa/*
+# Lightmap & GI 缓存
+Assets/**/LightingData.asset
+Assets/**/Lightmap-*
+# 自动生成的 Addressables
+Assets/AddressableAssetsData/*
+
+# Visual Studio
+.vs/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+
+# Rider / JetBrains
+.idea/
+*.iml
+
+# VSCode
+.vscode/
+
+# Android / iOS / WebGL build 输出
+[Bb]uilds/
+*.apk
+*.aab
+*.ipa
+
+*.pidb
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.db
+*.bak
+*.tmp
+*.orig
+
+.DS_Store
+Thumbs.db
+
