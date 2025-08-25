@@ -63,10 +63,4 @@ public class HumanController : MonoBehaviour
             Debug.Log($"[HumanController] {gameObject.name} initialized");
         }
     }
-
-    // 检查当前状态
-    public bool IsInState(HumanStates stateEnum)
-    {
-        return stateMachine != null && stateMachine.IsInState(stateEnum);
-    }
 }
