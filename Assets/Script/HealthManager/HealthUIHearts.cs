@@ -4,70 +4,87 @@ using System.Collections.Generic;
 
 public class HealthUIHearts : MonoBehaviour
 {
-    [Header("References")]
+    [Header("Refs")]
+    public PlayerController controller;
     public BirdHealthManager playerHealth;
-    public Transform heartsContainer;      // 放心心的一排父物体（建议挂 HorizontalLayoutGroup）
-    public Image heartPrefab;              // 一个带 Image 组件的预制体（尺寸合适的小心心）
+    public Transform heartsContainer;
+    public Image heartPrefab;
 
     [Header("Sprites")]
-    public Sprite fullHeart;               // 实心心图
-    public Sprite emptyHeart;              // 空心心图
+    public Sprite fullHeart;
+    public Sprite emptyHeart;
 
     private readonly List<Image> hearts = new List<Image>();
+    private BirdHealthManager boundHM; // 当前绑定的 HM
 
     private void OnEnable()
     {
+        // 监听切换事件（如果提供了 controller）
+        if (controller != null)
+            controller.OnCharacterSwitchedHealth += BindTo;
+
+        // 如果一开始就有固定的 playerHealth，也绑定一下
         if (playerHealth != null)
-            playerHealth.OnHealthChanged += HandleHealthChanged;
+            BindTo(playerHealth);
     }
 
     private void OnDisable()
     {
-        if (playerHealth != null)
-            playerHealth.OnHealthChanged -= HandleHealthChanged;
+        if (controller != null)
+            controller.OnCharacterSwitchedHealth -= BindTo;
+
+        UnbindHealth();
     }
 
-    private void Start()
+    private void BindTo(BirdHealthManager hm)
     {
-        BuildHearts(playerHealth != null ? playerHealth.maxHealth : 3);
-        // 初始刷新（如果 Start 时事件已触发也没问题）
-        if (playerHealth != null)
-            HandleHealthChanged(playerHealth.currentHealth, playerHealth.maxHealth);
+        UnbindHealth();
+
+        boundHM = hm;
+        if (boundHM != null)
+        {
+            // 订阅并立即刷新一次（包含 max 变化）
+            boundHM.OnHealthChanged += HandleHealthChanged;
+            HandleHealthChanged(boundHM.currentHealth, boundHM.maxHealth);
+        }
         else
-            HandleHealthChanged(3, 3);
+        {
+            // 没有角色时清 UI
+            BuildHearts(0);
+        }
+    }
+
+    private void UnbindHealth()
+    {
+        if (boundHM != null)
+        {
+            boundHM.OnHealthChanged -= HandleHealthChanged;
+            boundHM = null;
+        }
     }
 
     private void BuildHearts(int max)
     {
         // 清空旧的
         for (int i = hearts.Count - 1; i >= 0; i--)
-        {
             if (hearts[i] != null) Destroy(hearts[i].gameObject);
-        }
         hearts.Clear();
 
-        // 动态生成 max 个心心
+        // 生成 max 个
         for (int i = 0; i < max; i++)
         {
-            Image img = Instantiate(heartPrefab, heartsContainer);
-            img.sprite = emptyHeart; // 先默认空心
+            var img = Instantiate(heartPrefab, heartsContainer);
+            img.sprite = emptyHeart;
             hearts.Add(img);
         }
     }
 
     private void HandleHealthChanged(int current, int max)
     {
-        // 如果 max 变了（例如切换关卡或获得扩容），重新建 UI
         if (max != hearts.Count)
-        {
             BuildHearts(max);
-        }
 
-        // 前 current 个是实心，后面是空心
         for (int i = 0; i < hearts.Count; i++)
-        {
-            if (hearts[i] != null)
-                hearts[i].sprite = (i < current) ? fullHeart : emptyHeart;
-        }
+            hearts[i].sprite = (i < current) ? fullHeart : emptyHeart;
     }
 }
