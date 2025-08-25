@@ -2,7 +2,8 @@ using System;
 using UnityEngine;
 
 /*
-基础状态抽象类。
+基础状态抽象类
+
 具体的状态从这里继承。
 */
 public abstract class BaseState : IState

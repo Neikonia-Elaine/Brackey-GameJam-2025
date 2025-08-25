@@ -9,12 +9,16 @@ NPC Move状态
 public class HumanMoveState : BaseState
 {
     [Header("Move State Config")]
-    private float moveSpeed = 2f;
-    private float moveTimer = 0f;
-    private float moveDuration = 3f;
+    private HumanBlackboard humanBlackboard;
+    private float moveTimer;
+    private float moveDuration;
+    private float moveSpeed;
+    private float moveRange;
     private Vector2 moveDirection;
     private Rigidbody2D rb;
+    
 
+    // 构造函数，设置可转换状态，设置黑板
     public HumanMoveState(StateMachine stateMachine, GameObject owner) : base(stateMachine, owner)
     {
         rb = owner.GetComponent<Rigidbody2D>();
@@ -24,6 +28,14 @@ public class HumanMoveState : BaseState
             HumanStates.Hurt,
             HumanStates.Dead
         });
+
+        if (stateMachine.blackBoard != null)
+        {
+            humanBlackboard = stateMachine.blackBoard as HumanBlackboard;
+            moveDuration = humanBlackboard.moveDuration;
+            moveSpeed = humanBlackboard.moveSpeed;
+            moveRange = humanBlackboard.moveRange;
+        }
     }
 
     public override void OnEnter()
@@ -32,18 +44,15 @@ public class HumanMoveState : BaseState
         
         float horizontalDirection = UnityEngine.Random.Range(0, 2) == 0 ? -1f : 1f;
         moveDirection = new Vector2(horizontalDirection, 0f);
-        
-        Debug.Log($"[HumanMoveState] {owner.name} start move, direction: {horizontalDirection}");
     }
 
     public override void OnUpdate()
     {
         moveTimer += Time.deltaTime;
-        
+
         if (moveTimer >= moveDuration)
         {
             RequestTransition(HumanStates.Idle);
-            return;
         }
 
     }
@@ -62,8 +71,6 @@ public class HumanMoveState : BaseState
         {
             rb.velocity = Vector2.zero;
         }
-            
-        Debug.Log($"[HumanMoveState] {owner.name} stop move");
     }
 
 }

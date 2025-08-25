@@ -12,16 +12,16 @@ Human控制器
 public class HumanController : MonoBehaviour
 {
     [Header("Debug Config")]
-    [SerializeField] private bool debugMode = true;
-
+    public bool debugMode = true;
 
     [Header("StateMachine Config")]
     private StateMachine stateMachine;
+    public HumanBlackboard humanBlackboard;
 
     private void Awake()
     {
         stateMachine = GetComponent<StateMachine>();
-        
+
         if (GetComponent<Rigidbody2D>() == null)
         {
             Debug.LogError($"[HumanController] {gameObject.name} require Rigidbody2D");
@@ -30,16 +30,33 @@ public class HumanController : MonoBehaviour
 
     private void Start()
     {
-        InitializeHuman();
+        InitializeBlackboard();
+        InitializeStateMachine();
+        stateMachine.RunStateMachine();
+    }
+
+    public void InitializeBlackboard()
+    {
+        humanBlackboard = new HumanBlackboard();
+
+        humanBlackboard.humanTransform = transform;
+
+        humanBlackboard.idleDuration = 2f;
+
+        humanBlackboard.spawnPositionX = transform.position.x;
+        humanBlackboard.moveDuration = 3f;
+        humanBlackboard.moveSpeed = 2f;
+        humanBlackboard.moveRange = 3f;
     }
 
     // 初始化 Human, 添加状态, 设置初始状态
-    public void InitializeHuman()
+    public void InitializeStateMachine()
     {
+        stateMachine.Initialize(HumanStates.Idle, humanBlackboard);
+        
         stateMachine.AddState(HumanStates.Idle, new HumanIdleState(stateMachine, gameObject));
         stateMachine.AddState(HumanStates.Move, new HumanMoveState(stateMachine, gameObject));
         
-        stateMachine.Initialize(HumanStates.Idle);
         
         if (debugMode)
         {

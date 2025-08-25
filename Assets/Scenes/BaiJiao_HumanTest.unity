@@ -447,6 +447,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   debugMode: 1
+  moveSpeed: 2
+  moveDuration: 3
+  idleDuration: 2
 --- !u!114 &811370991
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -459,6 +462,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 473b3abf24ee1df4daf223d50360fa67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  enableDebugLog: 1
 --- !u!1 &1628950764
 GameObject:
   m_ObjectHideFlags: 0

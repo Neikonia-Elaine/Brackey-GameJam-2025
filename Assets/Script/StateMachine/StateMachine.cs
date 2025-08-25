@@ -3,39 +3,29 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /*
-黑板。
-用于存储状态机需要的数据。
-*/
-[Serializable]
-public class BlackBoard
-{
-    
-}
+状态机管理器
 
-/*
-状态机管理器。
 负责状态的创建、切换和管理。
 */
 public class StateMachine : MonoBehaviour
 {
-    [Header("Debug Info")]
-    private bool enableDebugLog = true;
+    [Header("Debug Config")]
+    public bool enableDebugLog = true;
 
     [Header("State Machine Config")]
-    private BlackBoard blackBoard;
+    public BlackBoard blackBoard;
     private Enum currentStateType;
     private Dictionary<Enum, BaseState> stateCache = new Dictionary<Enum, BaseState>();
     private bool isInitialized = false;
+    private bool isRunning = false;
 
 
     // 初始化状态机并设置初始状态
     // stateType: 初始状态类型
-    public void Initialize(Enum stateType)
+    public void Initialize(Enum stateType, BlackBoard blackBoard)
     {
-        blackBoard = new BlackBoard();
-
         currentStateType = stateType;
-        stateCache[currentStateType]?.OnEnter();
+        this.blackBoard = blackBoard;
 
         if (enableDebugLog)
         {
@@ -45,9 +35,21 @@ public class StateMachine : MonoBehaviour
         isInitialized = true;
     }
 
-    private void Update()
+    public void RunStateMachine()
     {
         if (!isInitialized)
+        {
+            Debug.LogWarning($"[StateMachine] StateMachine not initialized");
+            return;
+        }
+
+        isRunning = true;
+        stateCache[currentStateType]?.OnEnter();
+    }
+
+    private void Update()
+    {
+        if (!isRunning)
         {
             return;
         }
@@ -57,7 +59,7 @@ public class StateMachine : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (!isInitialized)
+        if (!isRunning)
         {
             return;
         }
