@@ -110,7 +110,26 @@ private void FixedUpdate()                                     // 状态的Fixed
 public bool ChangeState(Enum stateType)                        // 切换状态，状态的进入/退出事件在这里实现
 ```
 
+---
+## 使用方法
 
+### 1. 基本设置
+
+1. 创建空的GameObject
+2. 添加必要组件：
+   - `Controller` 自行实现的管理类脚本
+   - `StateMachine` 组件（自动添加）
+   - `Rigidbody2D` 组件
+     
+### 2. 调试模式
+
+设置 `StateMachine` 中的 `debugMode = true` 后可以在 Console 中看到：
+- 状态机初始化信息
+- 状态切换日志
+- 错误和警告信息
+
+### 3. 运行游戏
+检查Console中的日志
 
 ---
 
@@ -253,26 +272,6 @@ private void Start()
     stateMachine.RunStateMachine();
 }
 ```
----
-## 使用方法
-
-### 1. 基本设置
-
-1. 创建空的GameObject
-2. 添加必要组件：
-   - `Controller` 自行实现的管理类脚本
-   - `StateMachine` 组件（自动添加）
-   - `Rigidbody2D` 组件
-     
-### 2. 调试模式
-
-设置 `StateMachine` 中的 `debugMode = true` 后可以在 Console 中看到：
-- 状态机初始化信息
-- 状态切换日志
-- 错误和警告信息
-
-### 3. 运行游戏
-检查Console中的日志
 
 ---
 
