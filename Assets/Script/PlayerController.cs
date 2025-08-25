@@ -7,7 +7,6 @@ public class PlayerController : MonoBehaviour
     // 物理参数
     public float speed = 5f; 
     public float gravityScale = 0f; //暂时重力为0
-
     private Rigidbody2D rb;
     private Vector2 inputDirection;
 
