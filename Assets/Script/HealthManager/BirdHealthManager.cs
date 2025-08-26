@@ -52,7 +52,7 @@ public class BirdHealthManager : MonoBehaviour
 
 
     // 死亡
-    private void Die()
+    public void Die()
     {
         Debug.Log("Player Died!");
         RestartCurrentLevel.RestartLevel();
