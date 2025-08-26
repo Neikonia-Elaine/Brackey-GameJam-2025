@@ -14,10 +14,10 @@ public class PlayerController : MonoBehaviour
     public GameObject characterB;
     public GameObject characterC;
     
-    // 三个能力脚本
-    public MonoBehaviour abilityA;  // 拖入AbilityDash脚本
-    public MonoBehaviour abilityB;  // 拖入AbilityShield脚本
-    public MonoBehaviour abilityC;  // 拖入AbilityShoot脚本
+    // 三个能力脚本，拖入对应技能的脚本
+    public MonoBehaviour abilityA;
+    public MonoBehaviour abilityB;
+    public MonoBehaviour abilityC;
     
     private Rigidbody2D rb;
     private Vector2 inputDirection;
