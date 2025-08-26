@@ -34,91 +34,132 @@ Bird
 
 ## 一些重要的方法
 
-1. PlayerController.cs - 绑定在Bird父结构
+## 1. `PlayerController.cs` （绑定在 Bird 父结构）
+负责角色切换与技能释放。  
+由于只有 3 个角色，使用简单的暴力切换方式。
 
-角色切换 - 因为只有3个角色，采取暴力方法
+```csharp
+// 三个角色
+public GameObject characterA;
+public GameObject characterB;
+public GameObject characterC;
 
-    // 三个角色
-    
-    public GameObject characterA;
-    
-    public GameObject characterB;
-    
-    public GameObject characterC;
+// 三个能力脚本，拖入对应技能的脚本
+public MonoBehaviour abilityA;
+public MonoBehaviour abilityB;
+public MonoBehaviour abilityC;
 
-    
-    // 三个能力脚本，拖入对应技能的脚本
-    
-    public MonoBehaviour abilityA;
-    
-    public MonoBehaviour abilityB;
-    
-    public MonoBehaviour abilityC;
+private void ShowCharacter(int index) // 0=A, 1=B, 2=C
+```
 
-   private void ShowCharacter(int index) // 0=A, 1=B, 2=C
+- 在角色切换时，会发布事件：
+```csharp
+OnCharacterSwitchedHealth?.Invoke(hm);
+```
+→ 供 UI 重新刷新血条显示。
 
-   在角色切换时会发布事件：OnCharacterSwitchedHealth?.Invoke(hm); 让UI刷新血条显示
+---
 
-2.PlayerStateManager.cs
-    // 角色状态枚举
-    public enum PlayerState
+## 2. `PlayerStateManager.cs`
+负责角色状态管理，支持 **Normal / Hurt / Dead**。
+
+```csharp
+public enum PlayerState
+{
+    Normal,
+    Hurt,
+    Dead
+}
+```
+
+状态切换方法：
+```csharp
+ChangeState(PlayerState.Hurt);
+```
+
+### 状态进入回调
+```csharp
+private void OnEnterHurtState()
+{
+    Debug.Log("[StateManager] 进入受伤状态");
+    // 可在此播放受伤动画、音效、屏幕震动等
+}
+
+private void OnEnterDeadState()
+{
+    Debug.Log("[StateManager] 进入死亡状态");
+    // 死亡逻辑
+}
+```
+
+### 敌人配置（Inspector 可直接修改）
+```csharp
+public List<EnemyConfig> enemyList = new List<EnemyConfig>()
+{
+    new EnemyConfig { enemyName = "Human", damageValue = 1 },
+    new EnemyConfig { enemyName = "Car", damageValue = 5 },
+};
+```
+
+碰撞检测（根据敌人名称匹配）：  
+```csharp
+private void ProcessCollision(GameObject other)
+{
+    // 根据名称判断敌人并造成伤害
+}
+```
+> 注：伤害逻辑最好不要写在这里，目前先放在此。
+
+---
+
+## 3. `BirdHealthManager.cs`
+- 绑定在 **每只鸟的 GameObject** 上。  
+- 管理该角色的血量（当前值 / 最大值）。  
+- 在 `Start`、`TakeDamage`、`Heal` 等方法里都会发送事件：
+
+```csharp
+OnHealthChanged?.Invoke(currentHealth, maxHealth);
+```
+
+公共方法：
+- `Heal()`：治疗至满血（TODO: 支持传入数值）。  
+- `Die()`：处理死亡逻辑。
+
+---
+
+## 4. `HealthUIHearts.cs`
+血条 UI 控制，挂在场景下的 `healthContainer` / `UIManager`。  
+监听当前角色的 `BirdHealthManager`，动态生成心形血条。
+
+关键方法：
+```csharp
+private void BindTo(BirdHealthManager hm)
+{
+    UnbindHealth();
+
+    boundHM = hm;
+    if (boundHM != null)
     {
-        Normal,
-        Hurt,
-        Dead
+        // 订阅并立即刷新一次（包含 max 变化）
+        boundHM.OnHealthChanged += HandleHealthChanged;
+        HandleHealthChanged(boundHM.currentHealth, boundHM.maxHealth);
     }
+}
+```
 
-    // 状态切换语法：
-    ChangeState(PlayerState.Hurt);
+- 根据 `current / max` 动态绘制心心血条。  
+- 切换角色时退订旧 HM，订阅新 HM。
 
-    // 后续可以在这里添加死亡动画和音效
-        // 进入受伤状态
-        private void OnEnterHurtState()
-        {
-            Debug.Log("[StateManager] 进入受伤状态");
-            // 这里可以播放受伤动画、音效、屏幕震动等
-        }
-        
-        // 进入死亡状态
-        private void OnEnterDeadState()
-        {
-            Debug.Log("[StateManager] 进入死亡状态");
-            // 死亡逻辑
-        }
-    
-    // 敌人列表 - 可以直接在inspector中加入敌人object的名称，并设置相应伤害数值
-    public List<EnemyConfig> enemyList = new List<EnemyConfig>()
-    {
-        new EnemyConfig { enemyName = "Human", damageValue = 1 },
-        new EnemyConfig { enemyName = "Car", damageValue = 5 },
-    };
+---
 
-    private void ProcessCollision(GameObject other) 根据敌人名称进行碰撞监测 //伤害类代码不应该写在这里的，但是写都写了
+## 5. `RestartCurrentLevel.cs`
+用于关卡重载。  
 
-3. BirdHealthManager.cs
-   设置每只鸟不同的血条，绑定在每只鸟的game object上
-   Start, TakeDamage, Heal都会发送事件
-   OnHealthChanged?.Invoke(currentHealth, maxHealth);
+公共方法：
+```csharp
+RestartCurrentLevel.RestartLevel();
+```
+→ 异步重新加载当前关卡。
 
-   Heal() Die()都是公共方法，Heal可以治疗至满血 // to do, take value
-   
-4. HealthUIHearts.cs
-    血条由场景下的healthContainer和UIManager单独控制
-    重要方法，根据当前角色当前血量和最大值生成血条
-    private void BindTo(BirdHealthManager hm)
-    {
-        UnbindHealth();
-
-        boundHM = hm;
-        if (boundHM != null)
-        {
-            // 订阅并立即刷新一次（包含 max 变化）
-            boundHM.OnHealthChanged += HandleHealthChanged;
-            HandleHealthChanged(boundHM.currentHealth, boundHM.maxHealth);
-        }
-   }
-
-5. RestartCurrentLevel.cs
-    公共方法 RestartCurrentLevel.RestartLevel(); 可以重新加载当前关卡
 
 ---
