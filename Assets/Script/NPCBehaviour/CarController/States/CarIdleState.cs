@@ -43,7 +43,7 @@ public class CarIdleState : BaseState
     {
         idleTimer += Time.deltaTime;
         
-        if (idleTimer >= idleDuration)
+        if (carBlackboard != null && carBlackboard.isGrounded && idleTimer >= idleDuration)
         {
             RequestTransition(CarStates.Move);
         }

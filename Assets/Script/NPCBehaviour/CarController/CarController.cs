@@ -18,6 +18,9 @@ public class CarController : MonoBehaviour
     private StateMachine stateMachine;
     public CarBlackboard carBlackboard;
 
+    [Header("Other Config")]
+    private Camera mainCamera;
+
     private void Awake()
     {
         stateMachine = GetComponent<StateMachine>();
@@ -39,13 +42,19 @@ public class CarController : MonoBehaviour
     {
         carBlackboard = new CarBlackboard();
 
+        // Car Config
         carBlackboard.carTransform = transform;
 
+        // Car Idle State Config
         carBlackboard.idleDuration = 1f;
 
-        carBlackboard.spawnPositionX = transform.position.x;
-        carBlackboard.moveDuration = 3f;
-        carBlackboard.moveSpeed = 5f;
+        // Car Move State Config
+        carBlackboard.moveSpeed = 2f;
+
+        // Other Config
+        carBlackboard.screenOffset = 3f;
+        mainCamera = Camera.main;
+        carBlackboard.mainCamera = mainCamera;
     }
 
     public void InitializeStateMachine()
@@ -59,6 +68,25 @@ public class CarController : MonoBehaviour
         if (debugMode)
         {
             Debug.Log($"[CarController] {gameObject.name} initialized");
+        }
+    }
+
+    
+    // 用于作为状态转移的条件，由于设置了车只会和地面碰撞，所以任何碰撞都表示接触地面。
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (carBlackboard != null)
+        {
+            carBlackboard.isGrounded = true;
+        }
+    }
+
+    
+    private void OnCollisionExit2D(Collision2D collision)
+    {
+        if (carBlackboard != null)
+        {
+            carBlackboard.isGrounded = false;
         }
     }
 }

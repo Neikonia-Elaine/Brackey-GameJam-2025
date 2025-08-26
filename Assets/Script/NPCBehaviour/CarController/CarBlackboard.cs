@@ -16,10 +16,10 @@ public class CarBlackboard : BlackBoard
     public float moveSpeed;
     public float moveRange;
 
-    [Header("Screen Boundary Config")]
-    public float screenBoundaryLeft = -12f;
-    public float screenBoundaryRight = 12f;
-    public float screenBoundaryTop = 8f;
-    public float screenBoundaryBottom = -8f;
+    [Header("Ground Detection Config")]
+    public bool isGrounded = false;
 
+    [Header("Other Config")]
+    public Camera mainCamera;
+    public float screenOffset;
 }
