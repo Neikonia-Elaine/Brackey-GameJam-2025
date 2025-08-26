@@ -39,7 +39,7 @@ public class CarManager : MonoBehaviour
     private void InitializeCarManager()
     {
         spawnTimer = 0f;
-        spawnRate = 0.2f;
+        spawnRate = 0.1f;
         spawnPositionY = 5f;
         spawnScreenOffset = 3f;
     }

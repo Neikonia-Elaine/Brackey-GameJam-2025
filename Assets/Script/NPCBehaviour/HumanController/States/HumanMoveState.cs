@@ -34,8 +34,7 @@ public class HumanMoveState : BaseState
         SetCanTransitionToStates(new Enum[]
         { 
             HumanStates.Idle,
-            HumanStates.Hurt,
-            HumanStates.Dead
+            HumanStates.Hurt
         });
 
         if (stateMachine.blackBoard != null)
@@ -72,6 +71,12 @@ public class HumanMoveState : BaseState
     public override void OnUpdate()
     {
         moveTimer += Time.deltaTime;
+
+        // 如果受伤，则切换到hurt状态
+        if (humanBlackboard.isHurt)
+        {
+            RequestTransition(HumanStates.Hurt);
+        }
 
         // 检查是否会撞到边界，如果是则改变方向
         if (WillHittingBounds())

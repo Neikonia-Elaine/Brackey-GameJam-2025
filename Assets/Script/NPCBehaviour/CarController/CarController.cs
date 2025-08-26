@@ -7,6 +7,13 @@ Car控制器
 
 管理Car的状态机和行为
 */
+public enum CarStates
+{
+    Idle,
+    Move,
+    Dead,
+}
+
 [RequireComponent(typeof(StateMachine))]
 [RequireComponent(typeof(Rigidbody2D))]
 public class CarController : MonoBehaviour
@@ -49,7 +56,7 @@ public class CarController : MonoBehaviour
         carBlackboard.idleDuration = 1f;
 
         // Car Move State Config
-        carBlackboard.moveSpeed = 1.5f;
+        carBlackboard.moveSpeed = 5f;
 
         // Other Config
         carBlackboard.screenOffset = 3f;

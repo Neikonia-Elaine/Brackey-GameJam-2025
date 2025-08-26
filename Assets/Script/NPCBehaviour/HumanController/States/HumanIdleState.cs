@@ -6,6 +6,9 @@ NPC Idle状态
 */
 public class HumanIdleState : BaseState
 {
+    [Header("Human Config")]
+    private bool hasWeapon;
+
     [Header("Idle State Config")]
     private HumanBlackboard humanBlackboard;
     private float idleTimer;
@@ -20,12 +23,13 @@ public class HumanIdleState : BaseState
         { 
             HumanStates.Move,
             HumanStates.Attack,
-            HumanStates.Dead
+            HumanStates.Hurt
         });
 
         if (stateMachine.blackBoard != null)
         {
             humanBlackboard = stateMachine.blackBoard as HumanBlackboard;
+            hasWeapon = humanBlackboard.hasWeapon;
             idleDuration = humanBlackboard.idleDuration;
         }
     }
@@ -44,9 +48,24 @@ public class HumanIdleState : BaseState
     {
         idleTimer += Time.deltaTime;
         
+        // 如果受伤，则切换到hurt状态
+        if (humanBlackboard.isHurt)
+        {
+            RequestTransition(HumanStates.Hurt);
+        }
+
+        // 如果idle时间结束，则根据是否有武器切换到攻击或移动状态
         if (idleTimer >= idleDuration)
         {
-            RequestTransition(HumanStates.Move);
+            if (hasWeapon)
+            {
+                RequestTransition(HumanStates.Attack);
+            }
+            else
+            {
+                RequestTransition(HumanStates.Move);
+            }
         }
+
     }
 }
