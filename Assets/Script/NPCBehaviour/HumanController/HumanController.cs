@@ -39,14 +39,22 @@ public class HumanController : MonoBehaviour
     {
         humanBlackboard = new HumanBlackboard();
 
+        // Human Config
         humanBlackboard.humanTransform = transform;
 
+        // Human Idle State Config
         humanBlackboard.idleDuration = 2f;
 
+        // Human Move State Config
         humanBlackboard.spawnPositionX = transform.position.x;
-        humanBlackboard.moveDuration = 3f;
-        humanBlackboard.moveSpeed = 2f;
+        humanBlackboard.moveDuration = 2f;
+        humanBlackboard.moveSpeed = 0.5f;
         humanBlackboard.moveRange = 3f;
+
+        // Human Movement Bounds Config
+        humanBlackboard.movementAreaCenter = transform.position;
+        humanBlackboard.movementRadius = 3f;
+        humanBlackboard.boundsBuffer = 0.5f;
     }
 
     // 初始化 Human, 添加状态, 设置初始状态

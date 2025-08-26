@@ -49,7 +49,7 @@ public class CarController : MonoBehaviour
         carBlackboard.idleDuration = 1f;
 
         // Car Move State Config
-        carBlackboard.moveSpeed = 2f;
+        carBlackboard.moveSpeed = 1.5f;
 
         // Other Config
         carBlackboard.screenOffset = 3f;

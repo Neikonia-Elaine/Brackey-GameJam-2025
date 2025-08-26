@@ -131,6 +131,7 @@ MonoBehaviour:
     moveDuration: 0
     moveSpeed: 0
     moveRange: 0
+    isGrounded: 0
     mainCamera: {fileID: 0}
     screenOffset: 0
 --- !u!1 &2209607042410298260
@@ -207,7 +208,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Sprite: {fileID: -9095717837082945937, guid: 207ee8102dd4143d288186ef0be518ee, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 0.48742133, b: 0.48742133, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
