@@ -35,15 +35,24 @@ Bird
 ## 一些重要的方法
 
 1. PlayerController.cs - 绑定在Bird父结构
+
 角色切换 - 因为只有3个角色，采取暴力方法
+
     // 三个角色
+    
     public GameObject characterA;
+    
     public GameObject characterB;
+    
     public GameObject characterC;
+
     
     // 三个能力脚本，拖入对应技能的脚本
+    
     public MonoBehaviour abilityA;
+    
     public MonoBehaviour abilityB;
+    
     public MonoBehaviour abilityC;
 
    private void ShowCharacter(int index) // 0=A, 1=B, 2=C
