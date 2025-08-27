@@ -7,7 +7,8 @@ public enum PlayerState
 {
     Normal,
     Hurt,
-    Dead
+    Dead,
+    Walk
 }
 
 // 敌人配置
@@ -115,6 +116,12 @@ public class PlayerStateManager : MonoBehaviour
         Debug.Log($"[StateManager] 移除敌人: {enemyName}");
     }
     
+    // 切换到walk状态的公共方法
+    public void SetWalkState()
+    {
+        ChangeState(PlayerState.Walk);
+    }
+    
     // 统一的伤害接收入口
     public void TakeDamage(int damageAmount, GameObject damageSource = null)
     {
@@ -157,7 +164,7 @@ public class PlayerStateManager : MonoBehaviour
         
         Debug.Log($"[StateManager] 状态切换: {oldState} -> {newState}");
         
-        // 触发状态变化事件
+        // 触发状态变化事件 - 广播给所有人
         OnStateChanged?.Invoke(newState);
         
         // 根据新状态执行逻辑
@@ -172,7 +179,16 @@ public class PlayerStateManager : MonoBehaviour
             case PlayerState.Normal:
                 OnEnterNormalState();
                 break;
+            case PlayerState.Walk:
+                OnEnterWalkState();
+                break;
         }
+    }
+    
+    // 进入行走状态
+    private void OnEnterWalkState()
+    {
+        Debug.Log("[StateManager] 进入行走状态");
     }
     
     // 进入受伤状态

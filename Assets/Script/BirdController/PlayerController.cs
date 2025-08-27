@@ -1,140 +1,252 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 using System;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerController : MonoBehaviour
 {
-    // 物理参数
+    [Header("移动参数")]
     public float speed = 5f;
-    public float gravityScale = 0f;
     
-    // 三个角色
+    [Header("角色")]
     public GameObject characterA;
     public GameObject characterB;
     public GameObject characterC;
     
-    // 三个能力脚本，拖入对应技能的脚本
-    public MonoBehaviour abilityA;
-    public MonoBehaviour abilityB;
-    public MonoBehaviour abilityC;
+    [Header("技能")]
+    public AbilityPoop abilityA;
+    public AbilityDash abilityB;
+    public AbilityBomb abilityC;
+    
+    [Header("输入设置")]
+    public KeyCode leftKey = KeyCode.A;
+    public KeyCode rightKey = KeyCode.D;
+    public KeyCode upKey = KeyCode.W;
+    public KeyCode downKey = KeyCode.S;
+    public KeyCode jumpKey = KeyCode.Space;
+    public KeyCode switchKey = KeyCode.Tab;
+    public bool enableArrowKeys = true;
     
     private Rigidbody2D rb;
     private Vector2 inputDirection;
-    private PlayerBirdController input;
-    
-    private int currentCharacter = 0;  // 0=A, 1=B, 2=C
+    private bool facingRight = true;
+    private bool isGrounded = false;
+    private int currentCharacter = 0;
     
     public event Action<BirdHealthManager> OnCharacterSwitchedHealth;
     
-    private void Awake()
+    // 组件引用
+    private Animator currentAnimator;
+    private PlayerStateManager currentStateManager;
+    
+    void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        rb.gravityScale = gravityScale;
-        input = new PlayerBirdController();
+        rb.gravityScale = 0f;
     }
     
-    private void Start()
+    void Start()
     {
-        // 只显示第一个角色
         ShowCharacter(0);
     }
     
-    private void OnEnable()
+    void Update()
     {
-        input.GamePlay.Enable();
-        input.GamePlay.Move.performed += OnMovePerformed;
-        input.GamePlay.Move.canceled += OnMoveCanceled;
+        HandleInput();
+        HandleMovement();
+        HandleFlip();
     }
     
-    private void OnDisable()
+    void FixedUpdate()
     {
-        input.GamePlay.Move.performed -= OnMovePerformed;
-        input.GamePlay.Move.canceled -= OnMoveCanceled;
-        input.GamePlay.Disable();
+        rb.velocity = inputDirection * speed;
+        HandleAnimation();
     }
     
-    private void OnDestroy()
+    void HandleInput()
     {
-        input?.Dispose();
-    }
-    
-    private void Update()
-    {
-        // Tab切换角色
-        if (Input.GetKeyDown(KeyCode.Tab))
+        inputDirection = Vector2.zero;
+        
+        // 角色切换
+        if (Input.GetKeyDown(switchKey))
         {
             currentCharacter = (currentCharacter + 1) % 3;
             ShowCharacter(currentCharacter);
         }
         
-        // 空格使用能力
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (isGrounded)
         {
-            UseAbility();
+            // 地面：只能左右移动，S键拾取
+            if (Input.GetKey(leftKey) || (enableArrowKeys && Input.GetKey(KeyCode.LeftArrow)))
+                inputDirection.x = -1f;
+            if (Input.GetKey(rightKey) || (enableArrowKeys && Input.GetKey(KeyCode.RightArrow)))
+                inputDirection.x = 1f;
+                
+            if (Input.GetKeyDown(downKey))
+                HandlePickup();
+                
+            // 空格跳跃
+            if (Input.GetKey(jumpKey))
+                inputDirection.y = 12f;
+        }
+        else
+        {
+            // 空中：全方向移动
+            if (Input.GetKey(leftKey) || (enableArrowKeys && Input.GetKey(KeyCode.LeftArrow)))
+                inputDirection.x = -1f;
+            if (Input.GetKey(rightKey) || (enableArrowKeys && Input.GetKey(KeyCode.RightArrow)))
+                inputDirection.x = 1f;
+            if (Input.GetKey(upKey) || (enableArrowKeys && Input.GetKey(KeyCode.UpArrow)))
+                inputDirection.y = 1f;
+            if (Input.GetKey(downKey) || (enableArrowKeys && Input.GetKey(KeyCode.DownArrow)))
+                inputDirection.y = -1f;
+                
+            // 空格使用技能
+            if (Input.GetKeyDown(jumpKey))
+                UseAbility();
         }
     }
     
-    private void FixedUpdate()
+    void HandleMovement()
     {
-        ApplyMove();
+        // 移动逻辑已在FixedUpdate中处理
     }
     
-    private void OnMovePerformed(InputAction.CallbackContext ctx)
+    void HandleFlip()
     {
-        inputDirection = ctx.ReadValue<Vector2>();
+        if (inputDirection.x > 0f && !facingRight)
+            Flip();
+        else if (inputDirection.x < 0f && facingRight)
+            Flip();
     }
     
-    private void OnMoveCanceled(InputAction.CallbackContext ctx)
+    void Flip()
     {
-        inputDirection = Vector2.zero;
-    }
-    
-    private void ApplyMove()
-    {
-        rb.velocity = inputDirection * speed;
-    }
-
-    private void ShowCharacter(int index)
-    {
-        // 隐藏所有
-        characterA.SetActive(false);
-        characterB.SetActive(false);
-        characterC.SetActive(false);
-
-        GameObject active = null;
-
-        switch (index)
+        facingRight = !facingRight;
+        GameObject currentChar = GetCurrentCharacter();
+        if (currentChar != null)
         {
-            case 0: characterA.SetActive(true); active = characterA; Debug.Log("切换到角色A"); break;
-            case 1: characterB.SetActive(true); active = characterB; Debug.Log("切换到角色B"); break;
-            case 2: characterC.SetActive(true); active = characterC; Debug.Log("切换到角色C"); break;
-        }
-        // 通知外部当前角色的血量管理器
-        if (active != null)
-        {
-            var hm = active.GetComponent<BirdHealthManager>() 
-                    ?? active.GetComponentInChildren<BirdHealthManager>(true);
-            OnCharacterSwitchedHealth?.Invoke(hm);
+            SpriteRenderer sr = currentChar.GetComponent<SpriteRenderer>() 
+                               ?? currentChar.GetComponentInChildren<SpriteRenderer>();
+            if (sr != null)
+                sr.flipX = !facingRight;
         }
     }
     
-    private void UseAbility()
+    void HandleAnimation()
+    {
+        if (currentAnimator == null) return;
+        
+        // 先重置所有trigger
+        currentAnimator.ResetTrigger("fly");
+        currentAnimator.ResetTrigger("walk");
+        
+        // 根据移动状态设置trigger
+        if (inputDirection != Vector2.zero)
+        {
+            if (isGrounded && inputDirection.y <= 0)
+            {
+                // 在地面且没有向上移动 -> walk
+                currentAnimator.SetTrigger("walk");
+                if (currentStateManager != null)
+                {
+                    currentStateManager.SetWalkState();
+                }
+            }
+            else
+            {
+                // 在空中或向上移动 -> fly
+                currentAnimator.SetTrigger("fly");
+                if (currentStateManager != null)
+                {
+                    currentStateManager.ResetState();
+                }
+            }
+        }
+    }
+    
+    void ShowCharacter(int index)
+    {
+        characterA.SetActive(index == 0);
+        characterB.SetActive(index == 1);
+        characterC.SetActive(index == 2);
+        
+        GameObject activeChar = GetCurrentCharacter();
+        if (activeChar != null)
+        {
+            currentAnimator = activeChar.GetComponent<Animator>() 
+                            ?? activeChar.GetComponentInChildren<Animator>();
+            currentStateManager = activeChar.GetComponent<PlayerStateManager>() 
+                                ?? activeChar.GetComponentInChildren<PlayerStateManager>();
+            
+            var healthManager = activeChar.GetComponent<BirdHealthManager>() 
+                              ?? activeChar.GetComponentInChildren<BirdHealthManager>();
+            OnCharacterSwitchedHealth?.Invoke(healthManager);
+            
+            // 应用朝向
+            SpriteRenderer sr = activeChar.GetComponent<SpriteRenderer>() 
+                              ?? activeChar.GetComponentInChildren<SpriteRenderer>();
+            if (sr != null)
+                sr.flipX = !facingRight;
+        }
+    }
+    
+    GameObject GetCurrentCharacter()
+    {
+        return currentCharacter switch
+        {
+            0 => characterA,
+            1 => characterB,
+            2 => characterC,
+            _ => characterA
+        };
+    }
+    
+    void UseAbility()
     {
         switch (currentCharacter)
         {
-            case 0:
-                if (abilityA != null)
-                    abilityA.SendMessage("UseAbility", SendMessageOptions.DontRequireReceiver);
-                break;
-            case 1:
-                if (abilityB != null)
-                    abilityB.SendMessage("UseAbility", SendMessageOptions.DontRequireReceiver);
-                break;
-            case 2:
-                if (abilityC != null)
-                    abilityC.SendMessage("UseAbility", SendMessageOptions.DontRequireReceiver);
-                break;
+            case 0: abilityA?.SendMessage("UseAbility", SendMessageOptions.DontRequireReceiver); break;
+            case 1: abilityB?.SendMessage("UseAbility", SendMessageOptions.DontRequireReceiver); break;
+            case 2: abilityC?.SendMessage("UseAbility", SendMessageOptions.DontRequireReceiver); break;
         }
     }
+    
+    void HandlePickup()
+    {
+        Debug.Log("拾取操作");
+        // 在这里添加拾取逻辑
+    }
+    
+    // 由碰撞检测调用
+    public void SetGrounded(bool grounded)
+    {
+        bool wasGrounded = isGrounded;
+        isGrounded = grounded;
+        
+        // 落地瞬间立即触发动画切换
+        if (!wasGrounded && isGrounded && currentAnimator != null)
+        {
+            // 刚落地，立即切换到walk
+            currentAnimator.SetTrigger("walk");
+            if (currentStateManager != null)
+            {
+                currentStateManager.SetWalkState();
+            }
+            Debug.Log("落地瞬间触发walk动画");
+        }
+        else if (wasGrounded && !isGrounded && currentAnimator != null)
+        {
+            // 刚离地，立即切换到fly
+            currentAnimator.SetTrigger("fly");
+            if (currentStateManager != null)
+            {
+                currentStateManager.ResetState();
+            }
+            Debug.Log("离地瞬间触发fly动画");
+        }
+    }
+    
+    // 公共接口
+    public bool GetFacingRight() => facingRight;
+    public bool GetIsGrounded() => isGrounded;
 }
