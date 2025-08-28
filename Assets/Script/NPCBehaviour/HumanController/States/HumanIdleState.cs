@@ -1,13 +1,15 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 /*
 NPC Idle状态
 */
 public class HumanIdleState : BaseState
 {
-    [Header("Human Config")]
-    private bool hasWeapon;
+    [Header("Human Config")]   
+    private List<Items> items;
 
     [Header("Idle State Config")]
     private HumanBlackboard humanBlackboard;
@@ -29,7 +31,7 @@ public class HumanIdleState : BaseState
         if (stateMachine.blackBoard != null)
         {
             humanBlackboard = stateMachine.blackBoard as HumanBlackboard;
-            hasWeapon = humanBlackboard.hasWeapon;
+            items = humanBlackboard.items;
             idleDuration = humanBlackboard.idleDuration;
         }
     }
@@ -57,7 +59,7 @@ public class HumanIdleState : BaseState
         // 如果idle时间结束，则根据是否有武器切换到攻击或移动状态
         if (idleTimer >= idleDuration)
         {
-            if (hasWeapon)
+            if (items.Contains(Items.Weapon))
             {
                 RequestTransition(HumanStates.Attack);
             }

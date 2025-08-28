@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 /*
 NPC Attack状态
@@ -8,7 +9,7 @@ NPC Attack状态
 public class HumanAttackState : BaseState
 {
     [Header("Human Config")]
-    private bool hasWeapon;
+    private List<Items> items;
 
     [Header("Attack State Config")]
     private HumanBlackboard humanBlackboard;
@@ -37,7 +38,7 @@ public class HumanAttackState : BaseState
         {
             humanBlackboard = stateMachine.blackBoard as HumanBlackboard;
             // Get Human Config
-            hasWeapon = humanBlackboard.hasWeapon;
+            items = humanBlackboard.items;
 
             // Get Attack State Config
             windupDuration = humanBlackboard.windupDuration;
