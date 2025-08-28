@@ -31,8 +31,11 @@ public class PlayerController : MonoBehaviour
     private bool facingRight = true;
     private bool isGrounded = false;
     private int currentCharacter = 0;
+
+     private GameObject biscuit; // 用于拾取检测
     
     public event Action<BirdHealthManager> OnCharacterSwitchedHealth;
+    public static event Action onBiscuitPicked;
     
     // 组件引用
     private Animator currentAnimator;
@@ -81,7 +84,7 @@ public class PlayerController : MonoBehaviour
             if (Input.GetKey(rightKey) || (enableArrowKeys && Input.GetKey(KeyCode.RightArrow)))
                 inputDirection.x = 1f;
                 
-            if (Input.GetKeyDown(downKey))
+            if (Input.GetKeyDown(downKey) && biscuit != null)
                 HandlePickup();
                 
             // 空格跳跃
@@ -210,11 +213,18 @@ public class PlayerController : MonoBehaviour
             case 2: abilityC?.SendMessage("UseAbility", SendMessageOptions.DontRequireReceiver); break;
         }
     }
-    
+
     void HandlePickup()
     {
         Debug.Log("拾取操作");
         // 在这里添加拾取逻辑
+        if (biscuit != null)
+        {
+            Destroy(biscuit);
+            biscuit = null;
+            onBiscuitPicked?.Invoke();
+            Debug.Log("饼干已拾取");
+        }
     }
     
     // 由碰撞检测调用
@@ -243,6 +253,22 @@ public class PlayerController : MonoBehaviour
                 currentStateManager.ResetState();
             }
             Debug.Log("离地瞬间触发fly动画");
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.CompareTag("biscuit"))
+        {
+            biscuit = collision.gameObject;
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D collision)
+    {
+        if (collision.gameObject == biscuit)
+        {
+            biscuit = null;
         }
     }
     
