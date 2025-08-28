@@ -6,9 +6,10 @@ using System.Collections.Generic;
 public class HumanBlackboard : BlackBoard
 {
     [Header("Human Config")]
+    public GameObject humanGameObject;
     public Transform humanTransform;
     public Collider2D humanCollider;
-    public bool hasWeapon;
+    public List<Items> items;
 
     [Header("Human Idle State Config")]
     public float idleDuration;

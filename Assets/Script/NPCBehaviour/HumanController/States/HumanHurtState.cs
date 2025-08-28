@@ -1,13 +1,24 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 /*
 NPC Hurt状态
 */
+public enum Items
+{
+    Weapon,
+    Hat,
+    Umbrella,
+    Biscuit
+}
+
 public class HumanHurtState : BaseState
 {
     [Header("Human Config")]
+    private GameObject humanGameObject;
     private Collider2D humanCollider;
+    private List<Items> items;
 
     [Header("Hurt State Config")]
     private HumanBlackboard humanBlackboard;
@@ -28,7 +39,9 @@ public class HumanHurtState : BaseState
         {
             humanBlackboard = stateMachine.blackBoard as HumanBlackboard;
             // Get Human Config
+            humanGameObject = humanBlackboard.humanGameObject;
             humanCollider = humanBlackboard.humanCollider;
+            items = humanBlackboard.items;
 
             // Get Hurt State Config
             hurtDuration = humanBlackboard.hurtDuration;
@@ -38,6 +51,23 @@ public class HumanHurtState : BaseState
 
     public override void OnEnter()
     {
+        // 受伤时，取消碰撞器
+        if (humanGameObject != null)
+        {
+            humanGameObject.layer = LayerMask.NameToLayer("IgnorePlayer");
+        }
+
+        // 掉落Biscuit
+        if (items.Contains(Items.Biscuit))
+        {
+            GameObject biscuit = humanGameObject.transform.GetChild(1).gameObject;
+            biscuit.transform.parent = null;
+            biscuit.GetComponent<Rigidbody2D>().simulated = true;
+            biscuit.GetComponent<Collider2D>().enabled = true;
+
+            items.Remove(Items.Biscuit);
+        }
+
         // TODO: 人类受伤时，实现说话气泡框
 
         hurtTimer = 0f;
@@ -47,12 +77,6 @@ public class HumanHurtState : BaseState
             rb.velocity = Vector2.zero;
         }
 
-        // 受伤时，取消碰撞器
-        // TODO: 需要优化，不能直接取消碰撞器，需要设置为不对玩家生效
-        if (humanCollider != null)
-        {
-            humanCollider.enabled = false;
-        }
     }
 
     public override void OnUpdate()
@@ -72,7 +96,7 @@ public class HumanHurtState : BaseState
         // 受伤结束时，恢复碰撞器
         if (humanCollider != null)
         {
-            humanCollider.enabled = true;
+            humanGameObject.layer = LayerMask.NameToLayer("NPC");
         }
     }
 }

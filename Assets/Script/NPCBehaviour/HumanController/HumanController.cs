@@ -22,11 +22,13 @@ public class HumanController : MonoBehaviour
     [Header("Debug Config")]
     public bool debugMode = true;
 
-    [Header("Human Config")]
-    public bool hasWeapon;
-
-    [Header("Human Attack State Config")]
+    [Header("Prefab Config")]
+    public GameObject biscuitPrefab;
+    public GameObject hatPrefab;
     public GameObject bulletPrefab;
+
+    [Header("Human Config")]
+    public List<Items> items;
 
     [Header("StateMachine Config")]
     private StateMachine stateMachine;
@@ -46,6 +48,7 @@ public class HumanController : MonoBehaviour
     private void Start()
     {
         InitializeBlackboard();
+        InitializeItems();
         InitializeStateMachine();
         stateMachine.RunStateMachine();
     }
@@ -55,10 +58,10 @@ public class HumanController : MonoBehaviour
         humanBlackboard = new HumanBlackboard();
 
         // Human Config
+        humanBlackboard.humanGameObject = gameObject;
         humanBlackboard.humanTransform = transform;
         humanBlackboard.humanCollider = GetComponent<Collider2D>();
-        humanBlackboard.hasWeapon = hasWeapon;
-
+        humanBlackboard.items = items;
 
         // Human Idle State Config
         humanBlackboard.idleDuration = 2f;
@@ -87,6 +90,21 @@ public class HumanController : MonoBehaviour
         humanBlackboard.hurtDuration = 10f;
     }
 
+    public void InitializeItems()
+    {
+        if (items.Contains(Items.Biscuit))
+        {
+            GameObject biscuit = Instantiate(biscuitPrefab, transform.position, Quaternion.identity);
+            biscuit.transform.parent = transform;
+        }
+
+        if (items.Contains(Items.Hat))
+        {
+            GameObject hat = Instantiate(hatPrefab, new Vector3(transform.position.x, transform.position.y + 2f, transform.position.z), Quaternion.identity);
+            hat.transform.parent = transform;
+        }
+    }
+
     // 初始化 Human, 添加状态, 设置初始状态
     public void InitializeStateMachine()
     {
@@ -106,9 +124,25 @@ public class HumanController : MonoBehaviour
     // 当Human与物体碰撞时，在黑板中设置受伤flag
     private void OnCollisionEnter2D(Collision2D collision)
     {
+        if (IsCollisionFromChild(collision)) 
+        {
+            return;
+        }
+        
         if (humanBlackboard != null && collision.gameObject.tag == "Shit")
         {
             humanBlackboard.isHurt = true;
         }
+    }
+
+    // 检查碰撞是否来自子物体
+    private bool IsCollisionFromChild(Collision2D collision)
+    {
+        foreach (ContactPoint2D contact in collision.contacts)
+        {
+            if (contact.collider.transform.IsChildOf(transform))
+                return true;
+        }
+        return false;
     }
 }
