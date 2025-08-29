@@ -10,6 +10,9 @@ public class UIManager : MonoBehaviour
     public GameObject bakcground;
     public GameObject TimerUI;
 
+    [Header("Managers")]
+    [SerializeField] private MySceneManager sceneManager;
+
     public void HideAllPanels()
     {
         if (menuUI) menuUI.SetActive(false);
@@ -50,12 +53,14 @@ public class UIManager : MonoBehaviour
     public void ShowInGameUI()
     {
         HideAllPanels();
-        MySceneManager sceneManager = FindObjectOfType<MySceneManager>();
+        Debug.Log("Showing In-Game UI");
+        // MySceneManager sceneManager = FindObjectOfType<MySceneManager>();
         if (sceneManager.Level1SceneLoadStatus())
         {
             if (inGameUI) inGameUI.SetActive(true);
             TimerUI.SetActive(false);
-        } else
+        }
+        else
         {
             if (inGameUI) inGameUI.SetActive(true);
             ShowTimerUI();

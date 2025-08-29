@@ -18,6 +18,8 @@ public class AbilityDash : MonoBehaviour
     
     // 碰撞事件
     public static event Action<GameObject> OnDashCollision;
+    // 新增：破坏事件
+    public static event Action<GameObject> OnDashDestroy;
     
     // 组件引用
     private Animator animator;
@@ -83,50 +85,43 @@ public class AbilityDash : MonoBehaviour
             
             parent.position = Vector3.Lerp(startPos, endPos, t);
             
-            // 检测碰撞
-            CheckCollisions();
-            
             yield return null;
         }
         
         // 确保到达终点
         parent.position = endPos;
-        // Debug.Log("到达重点了！！ ");
-        CheckCollisions();
 
         // 4. 立即触发Fly动画
         if (animator != null)
         {
             animator.SetTrigger(flyTrigger);
-            
         }
         
         isDashing = false;
     }
     
-    private void CheckCollisions()
+    // 新增：Trigger检测方法
+    private void OnTriggerEnter2D(Collider2D other)
     {
-        Vector2 pos = transform.parent.position;
-        Collider2D[] hits = Physics2D.OverlapCircleAll(pos, 0.5f);
+        // 只在dash状态下处理碰撞
+        if (!isDashing) return;
         
-        foreach (var hit in hits)
+        // Platform碰撞 - 扣血 + 发出破坏信号
+        if (((1 << other.gameObject.layer) & platformLayer) != 0)
         {
-            // 跳过自己
-            if (hit.transform.IsChildOf(transform.parent)) continue;
-            
-            // Platform碰撞 - 扣血
-            if (((1 << hit.gameObject.layer) & platformLayer) != 0)
+            // 扣血
+            if (healthManager != null)
             {
-                if (healthManager != null)
-                {
-                    healthManager.SetDamage(platformDamage);
-                    healthManager.TakeDamage();
-                }
-                return; // 碰到Platform就停止
+                healthManager.SetDamage(platformDamage);
+                healthManager.TakeDamage();
             }
             
-            // 其他碰撞 - 广播事件
-            OnDashCollision?.Invoke(hit.gameObject);
+            // 发出破坏信号
+            OnDashDestroy?.Invoke(other.gameObject);
+            return;
         }
+        
+        // 其他碰撞 - 广播事件
+        OnDashCollision?.Invoke(other.gameObject);
     }
 }

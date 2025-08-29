@@ -249,7 +249,7 @@ public class PlayerStateManager : MonoBehaviour
     {
         if (healthManager != null)
         {
-            healthManager.Heal();
+            healthManager.HealFull();
             
             if (currentState != PlayerState.Dead)
             {

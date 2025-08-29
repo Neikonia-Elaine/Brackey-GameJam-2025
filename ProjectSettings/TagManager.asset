@@ -8,6 +8,7 @@ TagManager:
   - Platform
   - Shit
   - biscuit
+  - Vehicle
   layers:
   - Default
   - TransparentFX
@@ -19,7 +20,7 @@ TagManager:
   - NPC
   - Vehicle
   - Player
-  - 
+  - detector
   - 
   - 
   - 

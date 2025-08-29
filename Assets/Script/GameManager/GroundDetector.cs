@@ -9,7 +9,7 @@ public class GroundDetector : MonoBehaviour
     
     void Start()
     {
-        player = GetComponentInParent<PlayerController>();
+        player = GetComponent<PlayerController>();
     }
     
     void OnTriggerEnter2D(Collider2D other)

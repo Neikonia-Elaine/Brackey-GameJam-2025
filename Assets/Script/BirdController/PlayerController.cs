@@ -6,6 +6,8 @@ public class PlayerController : MonoBehaviour
 {
     [Header("移动参数")]
     public float speed = 5f;
+    public float jumpForce = 10f;
+    public float switchHeight = 2.0f; // 切换角色时的提升高度
     
     [Header("角色")]
     public GameObject characterA;
@@ -36,6 +38,9 @@ public class PlayerController : MonoBehaviour
     
     public event Action<BirdHealthManager> OnCharacterSwitchedHealth;
     public static event Action onBiscuitPicked;
+    // public static event Action onBiscuitShown;
+
+    // public static event Action onBiscuitHidden;
     
     // 组件引用
     private Animator currentAnimator;
@@ -54,8 +59,20 @@ public class PlayerController : MonoBehaviour
     
     void Update()
     {
+        if (Input.GetKeyDown(switchKey))
+        {
+            //检查角色是否在阈值高度以上
+            if (transform.position.y > switchHeight)
+            {
+                currentCharacter = (currentCharacter + 1) % 3;
+                ShowCharacter(currentCharacter);
+            }
+            else
+            {
+                Debug.Log("高度不足，不能切换角色");
+            }
+        }
         HandleInput();
-        HandleMovement();
         HandleFlip();
     }
     
@@ -68,14 +85,14 @@ public class PlayerController : MonoBehaviour
     void HandleInput()
     {
         inputDirection = Vector2.zero;
-        
+
         // 角色切换
-        if (Input.GetKeyDown(switchKey))
-        {
-            currentCharacter = (currentCharacter + 1) % 3;
-            ShowCharacter(currentCharacter);
-        }
-        
+        // if (Input.GetKeyDown(switchKey))
+        // {
+        //     currentCharacter = (currentCharacter + 1) % 3;
+        //     ShowCharacter(currentCharacter);
+        // }
+
         if (isGrounded)
         {
             // 地面：只能左右移动，S键拾取
@@ -83,13 +100,17 @@ public class PlayerController : MonoBehaviour
                 inputDirection.x = -1f;
             if (Input.GetKey(rightKey) || (enableArrowKeys && Input.GetKey(KeyCode.RightArrow)))
                 inputDirection.x = 1f;
-                
+
             if (Input.GetKeyDown(downKey) && biscuit != null)
                 HandlePickup();
-                
+
             // 空格跳跃
             if (Input.GetKey(jumpKey))
-                inputDirection.y = 12f;
+            {
+                inputDirection.y = jumpForce;
+                currentAnimator.SetTrigger("fly");
+            }
+                
         }
         else
         {
@@ -102,17 +123,13 @@ public class PlayerController : MonoBehaviour
                 inputDirection.y = 1f;
             if (Input.GetKey(downKey) || (enableArrowKeys && Input.GetKey(KeyCode.DownArrow)))
                 inputDirection.y = -1f;
-                
+
             // 空格使用技能
             if (Input.GetKeyDown(jumpKey))
                 UseAbility();
         }
     }
-    
-    void HandleMovement()
-    {
-        // 移动逻辑已在FixedUpdate中处理
-    }
+
     
     void HandleFlip()
     {
@@ -220,7 +237,7 @@ public class PlayerController : MonoBehaviour
         // 在这里添加拾取逻辑
         if (biscuit != null)
         {
-            Destroy(biscuit);
+            // Destroy(biscuit);
             biscuit = null;
             onBiscuitPicked?.Invoke();
             Debug.Log("饼干已拾取");
@@ -258,17 +275,21 @@ public class PlayerController : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
+        // onBiscuitShown?.Invoke();
         if (collision.CompareTag("biscuit"))
         {
+            Debug.Log("这里是玩家的饼干的碰撞检测");
             biscuit = collision.gameObject;
         }
     }
 
     private void OnTriggerExit2D(Collider2D collision)
     {
+
         if (collision.gameObject == biscuit)
         {
             biscuit = null;
+            // onBiscuitHidden?.Invoke();
         }
     }
     
