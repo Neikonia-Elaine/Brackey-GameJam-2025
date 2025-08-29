@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7928854774189765063}
   - component: {fileID: 4761530384628467693}
-  m_Layer: 7
+  m_Layer: 11
   m_Name: Hat_Trigger
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -87,7 +87,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5890863820166462420}
   - component: {fileID: 6757360788468965635}
-  m_Layer: 7
+  m_Layer: 11
   m_Name: Hat_Sprite
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -173,7 +173,7 @@ GameObject:
   - component: {fileID: 1320154045940857749}
   - component: {fileID: 4393129322014173370}
   - component: {fileID: -88854476155560897}
-  m_Layer: 7
+  m_Layer: 11
   m_Name: Hat
   m_TagString: Untagged
   m_Icon: {fileID: 0}

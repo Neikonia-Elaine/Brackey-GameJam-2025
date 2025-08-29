@@ -105,7 +105,7 @@ public class AbilityDash : MonoBehaviour
     {
         // 只在dash状态下处理碰撞
         if (!isDashing) return;
-        
+
         // Platform碰撞 - 扣血 + 发出破坏信号
         if (((1 << other.gameObject.layer) & platformLayer) != 0)
         {

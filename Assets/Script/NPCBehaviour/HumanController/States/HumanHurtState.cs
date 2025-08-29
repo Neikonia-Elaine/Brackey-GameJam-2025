@@ -60,10 +60,10 @@ public class HumanHurtState : BaseState
         // 播放hurt动画
         animator.Play("Hurt");
         
-        // 受伤时，取消Trigger碰撞器
-        foreach (Collider2D collider in triggerColliders)
+        // 受伤时，取消碰撞layer
+        foreach (Collider2D collider in physicsColliders)
         {
-            collider.enabled = false;
+            collider.includeLayers = LayerMask.GetMask("Nothing");
         }
 
         // 掉落Biscuit
@@ -106,10 +106,10 @@ public class HumanHurtState : BaseState
 
         humanBlackboard.isHurt = false;
 
-        // 受伤结束时，恢复Trigger碰撞器
-        foreach (Collider2D collider in triggerColliders)
+        // 受伤结束时，恢复碰撞layer
+        foreach (Collider2D collider in physicsColliders)
         {
-            collider.enabled = true;
+            collider.includeLayers = LayerMask.GetMask("Player","detector");
         }
     }
 }
