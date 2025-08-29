@@ -13,6 +13,7 @@ public class HumanBlackboard : BlackBoard
     public List<Collider2D> triggerColliders;
     public List<Items> items;
     public GameObject bubble;
+    public Animator animator;
 
     [Header("Human Idle State Config")]
     public float idleDuration;
@@ -22,6 +23,7 @@ public class HumanBlackboard : BlackBoard
     public float moveDuration;
     public float moveSpeed;
     public float moveRange;
+    public bool canMove;
 
     [Header("Human Movement Bounds Config")]
     public Vector2 movementAreaCenter;  // 移动区域中心点

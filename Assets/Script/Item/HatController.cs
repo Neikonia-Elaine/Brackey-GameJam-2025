@@ -19,7 +19,7 @@ public class HatController : MonoBehaviour
         parent = transform.parent.gameObject;
         rb = GetComponent<Rigidbody2D>();
         colliders = GetComponents<Collider2D>();
-        offset = new Vector3(0f, 2f, 0f);
+        offset = new Vector3(0f, 1.5f, 0f);
     }
 
     // Update is called once per frame

@@ -21,6 +21,7 @@ public class HumanHurtState : BaseState
     private List<Collider2D> triggerColliders;
     private List<Items> items;
     private GameObject bubble;
+    private Animator animator;
 
     [Header("Hurt State Config")]
     private HumanBlackboard humanBlackboard;
@@ -46,7 +47,8 @@ public class HumanHurtState : BaseState
             triggerColliders = humanBlackboard.triggerColliders;
             items = humanBlackboard.items;
             bubble = humanBlackboard.bubble;
-
+            animator = humanBlackboard.animator;
+            
             // Get Hurt State Config
             hurtDuration = humanBlackboard.hurtDuration;
 
@@ -55,6 +57,9 @@ public class HumanHurtState : BaseState
 
     public override void OnEnter()
     {
+        // 播放hurt动画
+        animator.Play("Hurt");
+        
         // 受伤时，取消Trigger碰撞器
         foreach (Collider2D collider in triggerColliders)
         {

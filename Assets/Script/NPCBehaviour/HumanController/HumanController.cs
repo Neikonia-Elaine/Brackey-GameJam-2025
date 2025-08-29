@@ -32,6 +32,10 @@ public class HumanController : MonoBehaviour
     public List<Collider2D> physicsColliders;
     public List<Collider2D> triggerColliders;
     public GameObject bubble;
+    public bool canMove = true;
+
+    [Header("Human Movement Bounds Config")]
+    public float movementRadius = 3f;
 
     [Header("StateMachine Config")]
     private StateMachine stateMachine;
@@ -93,7 +97,9 @@ public class HumanController : MonoBehaviour
         humanBlackboard.triggerColliders = triggerColliders;
         humanBlackboard.items = items;
         humanBlackboard.bubble = bubble;
-
+        humanBlackboard.animator = transform.GetChild(0).GetComponent<Animator>();
+        humanBlackboard.canMove = canMove;
+        
         // Human Idle State Config
         humanBlackboard.idleDuration = 2f;
 
@@ -105,13 +111,13 @@ public class HumanController : MonoBehaviour
 
         // Human Movement Bounds Config
         humanBlackboard.movementAreaCenter = transform.position;
-        humanBlackboard.movementRadius = 3f;
-        humanBlackboard.boundsBuffer = 0.5f;
+        humanBlackboard.movementRadius = movementRadius;
+        humanBlackboard.boundsBuffer = 0.3f;
 
         // Human Attack State Config
-        humanBlackboard.windupDuration = 0.5f;
-        humanBlackboard.attackDuration = 0.5f;
-        humanBlackboard.winddownDuration = 0.5f;
+        humanBlackboard.windupDuration = 1f;
+        humanBlackboard.attackDuration = 0f;
+        humanBlackboard.winddownDuration = 1f;
         humanBlackboard.cooldownDuration = 1f;
         humanBlackboard.bulletPrefab = bulletPrefab;
         humanBlackboard.bulletSpeed = 10f;
@@ -131,7 +137,7 @@ public class HumanController : MonoBehaviour
 
         if (items.Contains(Items.Hat))
         {
-            hat = Instantiate(hatPrefab, new Vector3(transform.position.x, transform.position.y + 2f, transform.position.z), Quaternion.identity);
+            hat = Instantiate(hatPrefab, new Vector3(transform.position.x, transform.position.y, transform.position.z), Quaternion.identity);
             hat.transform.parent = transform;
         }
     }

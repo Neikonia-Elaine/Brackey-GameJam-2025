@@ -46,10 +46,12 @@ public class CarMoveState : BaseState
         if (mainCamera.transform.position.x > carTransform.position.x)
         {
             dir = new Vector2(1, 0);
+            carTransform.localScale = new Vector3(-1, 1, 1);
         }
         else
         {
             dir = new Vector2(-1, 0);
+            carTransform.localScale = new Vector3(1, 1, 1);
         }
     }
 
@@ -57,6 +59,8 @@ public class CarMoveState : BaseState
     {
         moveTimer += Time.deltaTime;
 
+        // 改成撞到某碰撞体直接销毁
+        /*
         if (dir.x > 0)
         {
             if (carTransform.position.x > mainCamera.ScreenToWorldPoint(new Vector3(Screen.width, 0, 0)).x + screenOffset)
@@ -71,6 +75,7 @@ public class CarMoveState : BaseState
                 RequestTransition(CarStates.Dead);
             }
         }
+        */
     }
 
     public override void OnFixedUpdate()

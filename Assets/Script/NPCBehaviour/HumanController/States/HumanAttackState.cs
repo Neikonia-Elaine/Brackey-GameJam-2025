@@ -10,12 +10,14 @@ public class HumanAttackState : BaseState
 {
     [Header("Human Config")]
     private List<Items> items;
+    private Animator animator;
+    private Transform humanTransform;
 
     [Header("Attack State Config")]
     private HumanBlackboard humanBlackboard;
     private GameObject target;
     private float attackTimer;
-    private float cooldownTimer;
+    private float winddownTimer;
     private float windupDuration;
     private float attackDuration;
     private float winddownDuration;
@@ -23,7 +25,8 @@ public class HumanAttackState : BaseState
     private GameObject bulletPrefab;
     private float bulletSpeed;
 
-    private bool attacked;
+    private bool isAttacking;
+    private bool isAttacked;
 
     // 构造函数，设置可转换状态，设置黑板
     public HumanAttackState(StateMachine stateMachine, GameObject owner) : base(stateMachine, owner)
@@ -39,7 +42,8 @@ public class HumanAttackState : BaseState
             humanBlackboard = stateMachine.blackBoard as HumanBlackboard;
             // Get Human Config
             items = humanBlackboard.items;
-
+            animator = humanBlackboard.animator;
+            humanTransform = humanBlackboard.humanTransform;
             // Get Attack State Config
             windupDuration = humanBlackboard.windupDuration;
             attackDuration = humanBlackboard.attackDuration;
@@ -53,8 +57,9 @@ public class HumanAttackState : BaseState
     public override void OnEnter()
     {
         attackTimer = 0f;
-        cooldownTimer = 0f;
-        attacked = false;
+        winddownTimer = 0f;
+        isAttacked = false;
+        isAttacking = false;
         
         // 寻找玩家目标
         target = GameObject.FindGameObjectWithTag("Player");
@@ -62,7 +67,7 @@ public class HumanAttackState : BaseState
 
     public override void OnUpdate()
     {
-        // 检查是否受伤，优先处理受伤状态
+        // 检查是否受伤
         if (humanBlackboard.isHurt)
         {
             RequestTransition(HumanStates.Hurt);
@@ -70,25 +75,38 @@ public class HumanAttackState : BaseState
 
         attackTimer += Time.deltaTime;
 
-        // 前摇阶段
-        if (attackTimer >= windupDuration && !attacked)
+        // 攻击前摇
+        if (!isAttacked && !isAttacking)
         {
-            Attack();
-            attacked = true;
-            cooldownTimer = 0f; // 重置冷却计时器
+            PlayAttackAnimation();
+            isAttacking = true;
         }
 
-        // 攻击后的冷却阶段
-        if (attacked)
+        // 攻击发生
+        if (attackTimer >= windupDuration && isAttacking)
         {
-            cooldownTimer += Time.deltaTime;
+            Attack();
+            isAttacked = true;
+            isAttacking = false;
+            winddownTimer = 0f; // 重置冷却计时器
+        }
+
+        // 攻击冷却
+        if (isAttacked)
+        {
+            winddownTimer += Time.deltaTime;
             
             // 攻击完成后等待冷却时间，然后返回空闲状态
-            if (cooldownTimer >= winddownDuration)
+            if (winddownTimer >= winddownDuration)
             {
                 RequestTransition(HumanStates.Idle);
             }
         }
+    }
+
+    private void PlayAttackAnimation()
+    {
+        animator.Play("Attack");
     }
 
     public void Attack()
@@ -107,11 +125,13 @@ public class HumanAttackState : BaseState
 
         // 计算朝向玩家的2D方向
         Vector2 fireDirection = CalculateDirectionToPlayer();
+
+        // 更改 Sprite 方向
+        humanTransform.GetChild(0).localScale = new Vector3(fireDirection.x > 0 ? -1 : 1, 1, 1);
         
         // 在Human位置生成子弹
         Vector3 spawnPosition = humanBlackboard.humanTransform.position;
         GameObject bullet = GameObject.Instantiate(bulletPrefab, spawnPosition, Quaternion.identity);
-        
         
         // 给子弹施加朝向玩家的速度
         Rigidbody2D bulletRb = bullet.GetComponent<Rigidbody2D>();

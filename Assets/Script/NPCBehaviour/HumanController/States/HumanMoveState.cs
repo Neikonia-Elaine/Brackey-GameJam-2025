@@ -9,6 +9,10 @@ NPC Move状态
 */
 public class HumanMoveState : BaseState
 {
+    [Header("Human Config")]
+    private Transform humanTransform;
+    private Animator animator;
+
     [Header("Move State Config")]
     private HumanBlackboard humanBlackboard;
     private float moveTimer;
@@ -40,6 +44,9 @@ public class HumanMoveState : BaseState
         if (stateMachine.blackBoard != null)
         {
             humanBlackboard = stateMachine.blackBoard as HumanBlackboard;
+            // Get Human Config
+            humanTransform = humanBlackboard.humanTransform;
+            animator = humanBlackboard.animator;
             // Get Move State Config
             moveDuration = humanBlackboard.moveDuration;
             moveSpeed = humanBlackboard.moveSpeed;
@@ -64,8 +71,8 @@ public class HumanMoveState : BaseState
     public override void OnEnter()
     {
         moveTimer = 0f;
-        
         moveDirection = ChooseValidMoveDirection();
+        animator.Play("Move");
     }
 
     public override void OnUpdate()
@@ -135,11 +142,16 @@ public class HumanMoveState : BaseState
         // 如果有有效方向，随机选择一个
         if (validDirections.Count > 0)
         {
-            return validDirections[UnityEngine.Random.Range(0, validDirections.Count)];
+            Vector2 randomDirection = validDirections[UnityEngine.Random.Range(0, validDirections.Count)];
+            // 更改 Sprite 方向
+            humanTransform.GetChild(0).localScale = new Vector3(-randomDirection.x, 1, 1);
+            return randomDirection;
         }
         
         // 如果没有有效方向，朝向中心移动
         Vector2 directionToCenter = (movementAreaCenter - currentPos).normalized;
+        // 更改 Sprite 方向
+        humanTransform.GetChild(0).localScale = new Vector3(-directionToCenter.x, 1, 1);
         return directionToCenter;
     }
 

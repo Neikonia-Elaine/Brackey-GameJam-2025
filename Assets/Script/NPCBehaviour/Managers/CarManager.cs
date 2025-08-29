@@ -5,16 +5,10 @@ using UnityEngine;
 public class CarManager : MonoBehaviour
 {
     [Header("Car Spawn Config")]
-    public GameObject carPrefab;
+    public List<GameObject> carPrefabs;
     private float spawnTimer;
     public float spawnRate; // 每秒生成spawnRate辆车
-    public float spawnPositionY;
-
-    [Header("Camera Config")]
-    public Camera mainCamera;
-    private float screenBoundaryLeft;
-    private float screenBoundaryRight;
-    public float spawnScreenOffset;
+    public List<Vector2> spawnPositionList; // 生成车的位置列表
 
     // Start is called before the first frame update
     void Start()
@@ -25,9 +19,6 @@ public class CarManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        screenBoundaryLeft = mainCamera.ScreenToWorldPoint(new Vector3(0, 0, 0)).x - spawnScreenOffset;
-        screenBoundaryRight = mainCamera.ScreenToWorldPoint(new Vector3(Screen.width, 0, 0)).x + spawnScreenOffset;
-    
         spawnTimer += Time.deltaTime;
         if (spawnTimer >= 1f / spawnRate)
         {
@@ -39,20 +30,13 @@ public class CarManager : MonoBehaviour
     private void InitializeCarManager()
     {
         spawnTimer = 0f;
-        spawnRate = 0.1f;
-        spawnPositionY = 5f;
-        spawnScreenOffset = 3f;
+        spawnRate = 0.2f;
     }
 
     private void SpawnCar()
     {
-        if (Random.Range(0, 2) == 0)
-        {
-            GameObject car = Instantiate(carPrefab, new Vector3(screenBoundaryLeft, spawnPositionY, 0), Quaternion.identity);
-        }
-        else
-        {
-            GameObject car = Instantiate(carPrefab, new Vector3(screenBoundaryRight, spawnPositionY, 0), Quaternion.identity);
-        }
+        GameObject carPrefab = carPrefabs[Random.Range(0, carPrefabs.Count)];
+        Vector2 spawnPosition = spawnPositionList[Random.Range(0, spawnPositionList.Count)];
+        GameObject car = Instantiate(carPrefab, new Vector3(spawnPosition.x, spawnPosition.y, -1), Quaternion.identity);
     }
 }
