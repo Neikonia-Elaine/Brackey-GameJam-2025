@@ -19,15 +19,16 @@ public class GameEventManager : MonoBehaviour
         }
     }
 
-    // 定义游戏事件
+    // === 原有游戏事件 ===
     public event Action OnBiscuitCollected;
     public event Action OnHumanHit;
     public static event Action<int> OnHeartCurrentChanged;
-
     public event Action OnGamePaused;
     public event Action OnSwitched;
 
-
+    // === 简化的能力事件 ===
+    public static event Action<int> OnAbilityUsageChanged;         // 参数：剩余次数
+    public static event Action<bool, float> OnAbilityCooldownChanged;  // 参数：是否冷却中，剩余时间
 
     void Awake()
     {
@@ -40,7 +41,7 @@ public class GameEventManager : MonoBehaviour
         // DontDestroyOnLoad(gameObject);
     }
 
-    // 触发事件的方法
+    // === 原有事件触发方法 ===
     public void TriggerBiscuitCollected()
     {
         OnBiscuitCollected?.Invoke();
@@ -64,5 +65,16 @@ public class GameEventManager : MonoBehaviour
     public void TriggerSwitched()
     {
         OnSwitched?.Invoke();
+    }
+
+    // === 简化的能力事件触发方法 ===
+    public static void RaiseAbilityUsageChanged(int remainingUses)
+    {
+        OnAbilityUsageChanged?.Invoke(remainingUses);
+    }
+
+    public static void RaiseAbilityCooldownChanged(bool isOnCooldown, float remainingTime)
+    {
+        OnAbilityCooldownChanged?.Invoke(isOnCooldown, remainingTime);
     }
 }

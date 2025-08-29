@@ -21,6 +21,53 @@ public class AbilityPoop : MonoBehaviour
     [SerializeField] private int currentCooldownUses = 0; // 当前冷却周期内的使用次数
     [SerializeField] private bool isOnCooldown = false; // 是否在冷却中
     [SerializeField] private float cooldownRemaining = 0f; // 剩余冷却时间
+
+    // 防止重复订阅
+    private bool _switchSubscribed = false;
+    
+    private void OnEnable()
+    {
+        // 订阅角色切换事件
+        if (!_switchSubscribed)
+        {
+            var inst = GameEventManager.Instance;
+            if (inst != null)
+            {
+                inst.OnSwitched += OnSwitchedHandler;
+                _switchSubscribed = true;
+            }
+        }
+        
+        // 启用时广播当前状态
+        BroadcastCurrentState();
+    }
+
+    private void OnDisable()
+    {
+        // 取消订阅角色切换事件
+        if (_switchSubscribed && GameEventManager.Instance != null)
+        {
+            GameEventManager.Instance.OnSwitched -= OnSwitchedHandler;
+            _switchSubscribed = false;
+        }
+    }
+
+    // 角色切换事件处理器
+    private void OnSwitchedHandler()
+    {
+        // 只有激活的能力才广播
+        if (gameObject.activeInHierarchy && enabled)
+        {
+            BroadcastCurrentState();
+        }
+    }
+
+    // 广播当前状态
+    public void BroadcastCurrentState()
+    {
+        GameEventManager.RaiseAbilityUsageChanged(GetRemainingUses());
+        GameEventManager.RaiseAbilityCooldownChanged(isOnCooldown, cooldownRemaining);
+    }
     
     private void Update()
     {
@@ -28,6 +75,12 @@ public class AbilityPoop : MonoBehaviour
         if (isOnCooldown)
         {
             cooldownRemaining = Mathf.Max(0, cooldownRemaining - Time.deltaTime);
+            
+            // 每0.1秒更新一次UI
+            if (Time.time % 0.1f < Time.deltaTime)
+            {
+                GameEventManager.RaiseAbilityCooldownChanged(true, cooldownRemaining);
+            }
         }
     }
     
@@ -128,6 +181,9 @@ public class AbilityPoop : MonoBehaviour
         currentUsageCount++;
         currentCooldownUses++;
         
+        // 触发使用次数变化事件
+        GameEventManager.RaiseAbilityUsageChanged(GetRemainingUses());
+        
         // 检查是否需要进入冷却
         if (currentCooldownUses >= usesPerCooldown)
         {
@@ -141,6 +197,9 @@ public class AbilityPoop : MonoBehaviour
         cooldownRemaining = cooldownDuration;
         currentCooldownUses = 0; // 重置当前周期使用次数
         
+        // 触发冷却开始事件
+        GameEventManager.RaiseAbilityCooldownChanged(true, cooldownRemaining);
+        
         Debug.Log($"技能进入冷却，持续 {cooldownDuration} 秒");
         StartCoroutine(CooldownCoroutine());
     }
@@ -151,6 +210,9 @@ public class AbilityPoop : MonoBehaviour
         
         isOnCooldown = false;
         cooldownRemaining = 0f;
+        
+        // 触发冷却结束事件
+        GameEventManager.RaiseAbilityCooldownChanged(false, 0f);
         
         Debug.Log("技能冷却结束！");
     }
@@ -177,6 +239,10 @@ public class AbilityPoop : MonoBehaviour
         isOnCooldown = false;
         cooldownRemaining = 0f;
         StopAllCoroutines();
+        
+        // 重置后广播新状态
+        BroadcastCurrentState();
+        
         Debug.Log("使用次数已重置！");
     }
     
