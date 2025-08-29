@@ -35,6 +35,11 @@ public class UIManager : MonoBehaviour
         if (settingUI) settingUI.SetActive(true);
     }
 
+    public void CloseSetting()
+    {
+        if (settingUI) settingUI.SetActive(false);
+    }
+
     public void ShowTimerUI()
     {
         if (TimerUI) TimerUI.SetActive(true);

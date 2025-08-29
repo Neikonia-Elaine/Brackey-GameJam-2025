@@ -25,8 +25,8 @@ public class CameraFollow : MonoBehaviour
 
     // --- internal ---
     private Camera _cam;
-    private float _fixedY;     // 相机的固定 Y
-    private float _fixedZ;     // 相机的固定 Z
+    private float _fixedY;     // 初始 Y（仅用于开局定位）
+    private float _fixedZ;     // 固定 Z
 
     void Awake()
     {
@@ -43,7 +43,6 @@ public class CameraFollow : MonoBehaviour
             float halfH = _cam.orthographicSize;
             float halfW = halfH * _cam.aspect;
 
-            // 相机中心能到的最左 X
             float minX = b.xMin + halfW;
             float maxX = b.xMax - halfW;
 
@@ -57,8 +56,9 @@ public class CameraFollow : MonoBehaviour
     {
         if (target == null) return;
 
-        // 只计算“期望的 X”，Y/Z 固定
+        // 期望的 X/Y（Y 新增：简单跟随 target.y）
         float desiredX = target.position.x + offsetX;
+        float desiredY = target.position.y;
 
         // 边界夹取
         if (TryGetBounds(out Rect b))
@@ -68,15 +68,21 @@ public class CameraFollow : MonoBehaviour
 
             float minX = b.xMin + halfW;
             float maxX = b.xMax - halfW;
-
             if (minX <= maxX)
                 desiredX = Mathf.Clamp(desiredX, minX, maxX);
+
+            float minY = b.yMin + halfH;
+            float maxY = b.yMax - halfH;
+            if (minY <= maxY)
+                desiredY = Mathf.Clamp(desiredY, minY, maxY);
         }
 
-        // 简单平滑（想要硬跟随就把 followSpeed 设很大）
-        float newX = Mathf.Lerp(transform.position.x, desiredX, 1f - Mathf.Exp(-followSpeed * Time.deltaTime));
+        // 指数平滑（跟 X 一样的“更丝滑”手感）
+        float t = 1f - Mathf.Exp(-followSpeed * Time.deltaTime);
+        float newX = Mathf.Lerp(transform.position.x, desiredX, t);
+        float newY = Mathf.Lerp(transform.position.y, desiredY, t);
 
-        transform.position = new Vector3(newX, _fixedY, _fixedZ);
+        transform.position = new Vector3(newX, newY, _fixedZ);
     }
 
     private bool TryGetBounds(out Rect rect)

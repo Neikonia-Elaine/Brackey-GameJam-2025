@@ -22,6 +22,11 @@ public class GameEventManager : MonoBehaviour
     // 定义游戏事件
     public event Action OnBiscuitCollected;
     public event Action OnHumanHit;
+    public static event Action<int> OnHeartCurrentChanged;
+
+    public event Action OnGamePaused;
+    public event Action OnSwitched;
+
 
 
     void Awake()
@@ -40,9 +45,24 @@ public class GameEventManager : MonoBehaviour
     {
         OnBiscuitCollected?.Invoke();
     }
-    
+
     public void TriggerHumanHit()
     {
         OnHumanHit?.Invoke();
+    }
+
+    public static void RaiseHeartCurrentChanged(int current)
+    {
+        OnHeartCurrentChanged?.Invoke(current);
+    }
+
+    public void TriggerGamePaused()
+    {
+        OnGamePaused?.Invoke();
+    }
+    
+    public void TriggerSwitched()
+    {
+        OnSwitched?.Invoke();
     }
 }

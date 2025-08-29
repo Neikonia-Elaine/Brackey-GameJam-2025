@@ -68,6 +68,6 @@ public class ScoreHUD : MonoBehaviour
     private void UpdateText(int value)
     {
         if (scoreText != null)
-            scoreText.text = $"Score: {value}";
+            scoreText.text = $"{value}";
     }
 }

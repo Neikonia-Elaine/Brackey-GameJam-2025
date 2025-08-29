@@ -66,6 +66,7 @@ public class PlayerController : MonoBehaviour
             {
                 currentCharacter = (currentCharacter + 1) % 3;
                 ShowCharacter(currentCharacter);
+                GameEventManager.Instance.TriggerSwitched();
             }
             else
             {

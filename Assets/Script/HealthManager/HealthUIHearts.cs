@@ -1,90 +1,113 @@
+// HealthUIHeartsGlobal.cs
 using UnityEngine;
 using UnityEngine.UI;
-using System.Collections.Generic;
 
-public class HealthUIHearts : MonoBehaviour
+public class HealthUIHeartsGlobal : MonoBehaviour
 {
     [Header("Refs")]
-    public PlayerController controller;
-    public BirdHealthManager playerHealth;
-    public Transform heartsContainer;
-    public Image heartPrefab;
-
+    public Transform heartsContainer;   // 放着若干 Image 子物体
     [Header("Sprites")]
     public Sprite fullHeart;
-    public Sprite emptyHeart;
+    public Sprite emptyHeart;  // 可以为null
 
-    private readonly List<Image> hearts = new List<Image>();
-    private BirdHealthManager boundHM; // 当前绑定的 HM
+    [Header("Options")]
+    public bool useEmptySpriteForRest = false; // 改为false，因为你没有空心素材
+    [Header("Debug")]
+    public bool showDebugLogs = true;
 
-    private void OnEnable()
+    private Image[] heartImages;
+
+    void Awake()
     {
-        // 监听切换事件（如果提供了 controller）
-        if (controller != null)
-            controller.OnCharacterSwitchedHealth += BindTo;
-
-        // 如果一开始就有固定的 playerHealth，也绑定一下
-        if (playerHealth != null)
-            BindTo(playerHealth);
+        // 缓存所有子 Image（顺序按层级）
+        heartImages = heartsContainer.GetComponentsInChildren<Image>(includeInactive: true);
+        if (showDebugLogs) 
+            Debug.Log($"HeartUI: Found {heartImages.Length} heart images");
     }
 
-    private void OnDisable()
+    void OnEnable()
     {
-        if (controller != null)
-            controller.OnCharacterSwitchedHealth -= BindTo;
-
-        UnbindHealth();
+        GameEventManager.OnHeartCurrentChanged += RefreshCurrent;
+        
+        // 进入场景时马上刷新一遍当前激活角色的血量
+        RefreshCurrentActiveCharacter();
     }
 
-    private void BindTo(BirdHealthManager hm)
+    void OnDisable()
     {
-        UnbindHealth();
+        GameEventManager.OnHeartCurrentChanged -= RefreshCurrent;
+    }
 
-        boundHM = hm;
-        if (boundHM != null)
+    // 刷新当前激活角色的血量显示
+    private void RefreshCurrentActiveCharacter()
+    {
+        // 找到场景中激活的BirdHealthManager
+        BirdHealthManager[] healthManagers = FindObjectsOfType<BirdHealthManager>();
+        BirdHealthManager activeManager = null;
+        
+        foreach (var hm in healthManagers)
         {
-            // 订阅并立即刷新一次（包含 max 变化）
-            boundHM.OnHealthChanged += HandleHealthChanged;
-            HandleHealthChanged(boundHM.currentHealth, boundHM.maxHealth);
+            if (hm.gameObject.activeInHierarchy && hm.enabled)
+            {
+                activeManager = hm;
+                break;
+            }
+        }
+        
+        if (activeManager != null)
+        {
+            if (showDebugLogs) 
+                Debug.Log($"HeartUI: Found active health manager with {activeManager.getCurrentHealth()} health");
+            RefreshCurrent(activeManager.getCurrentHealth());
         }
         else
         {
-            // 没有角色时清 UI
-            BuildHearts(0);
+            if (showDebugLogs) 
+                Debug.LogWarning("HeartUI: No active BirdHealthManager found");
         }
     }
 
-    private void UnbindHealth()
+    private void RefreshCurrent(int current)
     {
-        if (boundHM != null)
+        if (heartImages == null || heartImages.Length == 0) 
         {
-            boundHM.OnHealthChanged -= HandleHealthChanged;
-            boundHM = null;
+            if (showDebugLogs) Debug.LogWarning("HeartUI: No heart images found!");
+            return;
         }
-    }
 
-    private void BuildHearts(int max)
-    {
-        // 清空旧的
-        for (int i = hearts.Count - 1; i >= 0; i--)
-            if (hearts[i] != null) Destroy(hearts[i].gameObject);
-        hearts.Clear();
+        // 安全夹取
+        current = Mathf.Max(0, current);
+        
+        if (showDebugLogs) 
+            Debug.Log($"HeartUI: Refreshing to show {current} hearts");
 
-        // 生成 max 个
-        for (int i = 0; i < max; i++)
+        for (int i = 0; i < heartImages.Length; i++)
         {
-            var img = Instantiate(heartPrefab, heartsContainer);
-            img.sprite = emptyHeart;
-            hearts.Add(img);
+            var img = heartImages[i];
+            if (img == null) continue;
+
+            if (i < current)
+            {
+                // 显示满心
+                if (!img.gameObject.activeSelf) img.gameObject.SetActive(true);
+                if (fullHeart != null) img.sprite = fullHeart;
+                if (showDebugLogs && i == 0) Debug.Log($"HeartUI: Showing heart {i} as full");
+            }
+            else
+            {
+                if (useEmptySpriteForRest && emptyHeart != null)
+                {
+                    // 显示空心
+                    if (!img.gameObject.activeSelf) img.gameObject.SetActive(true);
+                    img.sprite = emptyHeart;
+                }
+                else
+                {
+                    // 隐藏多余的心（推荐方案）
+                    if (img.gameObject.activeSelf) img.gameObject.SetActive(false);
+                    if (showDebugLogs && i == current) Debug.Log($"HeartUI: Hiding hearts from index {i} onwards");
+                }
+            }
         }
-    }
-
-    private void HandleHealthChanged(int current, int max)
-    {
-        if (max != hearts.Count)
-            BuildHearts(max);
-
-        for (int i = 0; i < hearts.Count; i++)
-            hearts[i].sprite = (i < current) ? fullHeart : emptyHeart;
     }
 }
