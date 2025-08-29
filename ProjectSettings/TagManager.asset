@@ -10,6 +10,7 @@ TagManager:
   - biscuit
   - Vehicle
   - Boom
+  - Bubble
   layers:
   - Default
   - TransparentFX
@@ -18,7 +19,7 @@ TagManager:
   - Water
   - UI
   - poop
-  - NPC
+  - NPCPhysics
   - Vehicle
   - Player
   - detector

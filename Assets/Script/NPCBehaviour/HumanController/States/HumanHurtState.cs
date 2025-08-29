@@ -17,8 +17,10 @@ public class HumanHurtState : BaseState
 {
     [Header("Human Config")]
     private GameObject humanGameObject;
-    private Collider2D humanCollider;
+    private List<Collider2D> physicsColliders;
+    private List<Collider2D> triggerColliders;
     private List<Items> items;
+    private GameObject bubble;
 
     [Header("Hurt State Config")]
     private HumanBlackboard humanBlackboard;
@@ -40,8 +42,10 @@ public class HumanHurtState : BaseState
             humanBlackboard = stateMachine.blackBoard as HumanBlackboard;
             // Get Human Config
             humanGameObject = humanBlackboard.humanGameObject;
-            humanCollider = humanBlackboard.humanCollider;
+            physicsColliders = humanBlackboard.physicsColliders;
+            triggerColliders = humanBlackboard.triggerColliders;
             items = humanBlackboard.items;
+            bubble = humanBlackboard.bubble;
 
             // Get Hurt State Config
             hurtDuration = humanBlackboard.hurtDuration;
@@ -51,10 +55,10 @@ public class HumanHurtState : BaseState
 
     public override void OnEnter()
     {
-        // 受伤时，取消碰撞器
-        if (humanGameObject != null)
+        // 受伤时，取消Trigger碰撞器
+        foreach (Collider2D collider in triggerColliders)
         {
-            humanGameObject.layer = LayerMask.NameToLayer("IgnorePlayer");
+            collider.enabled = false;
         }
 
         // 掉落Biscuit
@@ -68,7 +72,8 @@ public class HumanHurtState : BaseState
             items.Remove(Items.Biscuit);
         }
 
-        // TODO: 人类受伤时，实现说话气泡框
+        // 人类受伤时，说话气泡框显示
+        bubble.SetActive(true);
 
         hurtTimer = 0f;
         
@@ -91,12 +96,15 @@ public class HumanHurtState : BaseState
 
     public override void OnExit()
     {
+        // 说话气泡框隐藏
+        bubble.SetActive(false);
+
         humanBlackboard.isHurt = false;
 
-        // 受伤结束时，恢复碰撞器
-        if (humanCollider != null)
+        // 受伤结束时，恢复Trigger碰撞器
+        foreach (Collider2D collider in triggerColliders)
         {
-            humanGameObject.layer = LayerMask.NameToLayer("NPC");
+            collider.enabled = true;
         }
     }
 }

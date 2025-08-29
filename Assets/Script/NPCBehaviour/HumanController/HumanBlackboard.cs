@@ -9,7 +9,10 @@ public class HumanBlackboard : BlackBoard
     public GameObject humanGameObject;
     public Transform humanTransform;
     public Collider2D humanCollider;
+    public List<Collider2D> physicsColliders;
+    public List<Collider2D> triggerColliders;
     public List<Items> items;
+    public GameObject bubble;
 
     [Header("Human Idle State Config")]
     public float idleDuration;

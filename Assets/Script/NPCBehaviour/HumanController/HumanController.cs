@@ -29,6 +29,9 @@ public class HumanController : MonoBehaviour
 
     [Header("Human Config")]
     public List<Items> items;
+    public List<Collider2D> physicsColliders;
+    public List<Collider2D> triggerColliders;
+    public GameObject bubble;
 
     [Header("StateMachine Config")]
     private StateMachine stateMachine;
@@ -49,10 +52,34 @@ public class HumanController : MonoBehaviour
 
     private void Start()
     {
+        GetColliders();
+        GetBubble();
         InitializeBlackboard();
         InitializeItems();
         InitializeStateMachine();
         stateMachine.RunStateMachine();
+    }
+
+    private void GetColliders()
+    {
+        Collider2D[] allColliders = GetComponents<Collider2D>();
+        foreach (Collider2D collider in allColliders)
+        {
+            if (collider.isTrigger)
+            {
+                triggerColliders.Add(collider);
+            }     
+            else
+            {
+                physicsColliders.Add(collider);
+            }
+        }
+    }
+
+    private void GetBubble()
+    {
+        bubble = transform.GetChild(1).gameObject;
+        bubble.SetActive(false);
     }
 
     public void InitializeBlackboard()
@@ -62,8 +89,10 @@ public class HumanController : MonoBehaviour
         // Human Config
         humanBlackboard.humanGameObject = gameObject;
         humanBlackboard.humanTransform = transform;
-        humanBlackboard.humanCollider = GetComponent<Collider2D>();
+        humanBlackboard.physicsColliders = physicsColliders;
+        humanBlackboard.triggerColliders = triggerColliders;
         humanBlackboard.items = items;
+        humanBlackboard.bubble = bubble;
 
         // Human Idle State Config
         humanBlackboard.idleDuration = 2f;
@@ -123,23 +152,11 @@ public class HumanController : MonoBehaviour
         }
     }
 
-    // 当Human与Boom碰撞时，如果Human有帽子，则帽子消失
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        if (items.Contains(Items.Hat) && collision.gameObject.tag == "Boom") 
-        {
-            // TODO: 添加 hat 消失动画
-            
-            Destroy(hat);
-            items.Remove(Items.Hat);
-            return;
-        }
-    }
-
     // 当Human与Shit重叠时，在黑板中设置受伤flag
-    private void OnTriggerEnter2D(Collider2D collider)
-    {   
-        if (humanBlackboard != null && collider.gameObject.tag == "Shit")
+    // 当Human与Boom重叠时，如果Human有帽子，则帽子消失
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.gameObject.tag == "Shit")
         {
             humanBlackboard.isHurt = true;
         }
