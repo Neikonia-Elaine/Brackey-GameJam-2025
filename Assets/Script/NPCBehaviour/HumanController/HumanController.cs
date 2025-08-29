@@ -34,6 +34,8 @@ public class HumanController : MonoBehaviour
     private StateMachine stateMachine;
     public HumanBlackboard humanBlackboard;
 
+    public GameObject hat;
+
 
     private void Awake()
     {
@@ -100,7 +102,7 @@ public class HumanController : MonoBehaviour
 
         if (items.Contains(Items.Hat))
         {
-            GameObject hat = Instantiate(hatPrefab, new Vector3(transform.position.x, transform.position.y + 2f, transform.position.z), Quaternion.identity);
+            hat = Instantiate(hatPrefab, new Vector3(transform.position.x, transform.position.y + 2f, transform.position.z), Quaternion.identity);
             hat.transform.parent = transform;
         }
     }
@@ -121,28 +123,25 @@ public class HumanController : MonoBehaviour
         }
     }
 
-    // 当Human与物体碰撞时，在黑板中设置受伤flag
+    // 当Human与Boom碰撞时，如果Human有帽子，则帽子消失
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (IsCollisionFromChild(collision)) 
+        if (items.Contains(Items.Hat) && collision.gameObject.tag == "Boom") 
         {
+            // TODO: 添加 hat 消失动画
+            
+            Destroy(hat);
+            items.Remove(Items.Hat);
             return;
-        }
-        
-        if (humanBlackboard != null && collision.gameObject.tag == "Shit")
-        {
-            humanBlackboard.isHurt = true;
         }
     }
 
-    // 检查碰撞是否来自子物体
-    private bool IsCollisionFromChild(Collision2D collision)
-    {
-        foreach (ContactPoint2D contact in collision.contacts)
+    // 当Human与Shit重叠时，在黑板中设置受伤flag
+    private void OnTriggerEnter2D(Collider2D collider)
+    {   
+        if (humanBlackboard != null && collider.gameObject.tag == "Shit")
         {
-            if (contact.collider.transform.IsChildOf(transform))
-                return true;
+            humanBlackboard.isHurt = true;
         }
-        return false;
     }
 }

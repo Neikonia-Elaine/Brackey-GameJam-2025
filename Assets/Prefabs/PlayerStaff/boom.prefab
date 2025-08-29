@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 5558433211983786427}
   m_Layer: 0
   m_Name: boom
-  m_TagString: Untagged
+  m_TagString: Boom
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -175,6 +175,7 @@ MonoBehaviour:
   fallSpeed: 5
   ignoreFirstCollision: 1
   ignoreCollisionTime: 0.1
+  destructiblePlatformNames: []
 --- !u!95 &5558433211983786427
 Animator:
   serializedVersion: 5
