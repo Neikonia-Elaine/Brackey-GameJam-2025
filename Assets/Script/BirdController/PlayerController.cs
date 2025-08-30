@@ -180,6 +180,7 @@ public class PlayerController : MonoBehaviour
                 if (currentStateManager != null)
                 {
                     currentStateManager.ResetState();
+                    
                 }
             }
         }
