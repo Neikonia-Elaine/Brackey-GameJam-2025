@@ -153,6 +153,8 @@ MonoBehaviour:
     collisionSprite: {fileID: 21300000, guid: ab7c46f25bb68c840bfee66f46839a87, type: 3}
   - objectName: Hat
     collisionSprite: {fileID: 21300000, guid: 6cd298256e7c7bc4a91c0e52f874c8ca, type: 3}
+  - objectName: Car
+    collisionSprite: {fileID: 21300000, guid: 77908afeb9ae58b48a9d9a12348fe0e6, type: 3}
   destroyDelay: 1
   ignoreFirstCollision: 1
   ignoreCollisionTime: 0.1

@@ -31,13 +31,15 @@ public class UIManager : MonoBehaviour
 
     public void ShowSetting()
     {
-        HideAllPanels();
+        // HideAllPanels();
+        GameEventManager.Instance.TriggerGamePaused();
         if (settingUI) settingUI.SetActive(true);
     }
 
     public void CloseSetting()
     {
         if (settingUI) settingUI.SetActive(false);
+        GameEventManager.Instance.TriggerGameResumed();
     }
 
     public void ShowTimerUI()

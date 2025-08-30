@@ -7,6 +7,7 @@ public class AbilityDash : MonoBehaviour
     [Header("Dash Settings")]
     public float dashDistance = 4f; // 突进距离
     public float dashDuration = 0.3f; // 突进持续时间
+    public float cooldownDuration = 2f; // Dash间隔冷却时间
     public LayerMask platformLayer = -1; // Platform层级
     
     [Header("Damage Settings")]
@@ -15,6 +16,11 @@ public class AbilityDash : MonoBehaviour
     [Header("Animation Settings")]
     public string dashTrigger = "dash";
     public string flyTrigger = "fly";
+    
+    [Header("Current Status (只读)")]
+    [SerializeField] private bool isDashing = false; // 是否正在冲刺
+    [SerializeField] private bool isOnCooldown = false; // 是否在冷却中
+    [SerializeField] private float cooldownRemaining = 0f; // 剩余冷却时间
     
     // 碰撞事件
     public static event Action<GameObject> OnDashCollision;
@@ -25,7 +31,9 @@ public class AbilityDash : MonoBehaviour
     private Animator animator;
     private BirdHealthManager healthManager;
     private PlayerController playerController;
-    private bool isDashing = false;
+    
+    // 防止重复订阅
+    private bool _switchSubscribed = false;
     
     void Start()
     {
@@ -43,17 +51,104 @@ public class AbilityDash : MonoBehaviour
         }
     }
     
+    private void OnEnable()
+    {
+        // 订阅角色切换事件
+        if (!_switchSubscribed)
+        {
+            var inst = GameEventManager.Instance;
+            if (inst != null)
+            {
+                inst.OnSwitched += OnSwitchedHandler;
+                _switchSubscribed = true;
+            }
+        }
+        
+        // 启用时广播当前状态
+        BroadcastCurrentState();
+    }
+
+    private void OnDisable()
+    {
+        // 取消订阅角色切换事件
+        if (_switchSubscribed && GameEventManager.Instance != null)
+        {
+            GameEventManager.Instance.OnSwitched -= OnSwitchedHandler;
+            _switchSubscribed = false;
+        }
+    }
+
+    // 角色切换事件处理器
+    private void OnSwitchedHandler()
+    {
+        // 只有激活的能力才广播
+        if (gameObject.activeInHierarchy && enabled)
+        {
+            BroadcastCurrentState();
+        }
+    }
+
+    // 广播当前状态
+    public void BroadcastCurrentState()
+    {
+        // Dash的使用次数逻辑：可用时为1，不可用时为0
+        int remainingUses = CanUseAbility() ? 1 : 0;
+        GameEventManager.RaiseAbilityUsageChanged(remainingUses);
+        GameEventManager.RaiseAbilityCooldownChanged(isOnCooldown, cooldownRemaining);
+    }
+    
+    private void Update()
+    {
+        if (isOnCooldown)
+        {
+            cooldownRemaining = Mathf.Max(0, cooldownRemaining - Time.deltaTime);
+            
+            // 每0.1秒更新一次UI
+            if (Time.time % 0.1f < Time.deltaTime)
+            {
+                GameEventManager.RaiseAbilityCooldownChanged(true, cooldownRemaining);
+                
+                // 同时更新使用次数状态
+                int remainingUses = CanUseAbility() ? 1 : 0;
+                GameEventManager.RaiseAbilityUsageChanged(remainingUses);
+            }
+        }
+    }
+    
     public void UseAbility()
     {
-        if (!isDashing)
+        if (!CanUseAbility())
         {
-            StartCoroutine(DashSequence());
+            return;
         }
+        
+        StartCoroutine(DashSequence());
+    }
+    
+    private bool CanUseAbility()
+    {
+        if (isDashing)
+        {
+            Debug.LogWarning("正在冲刺中，无法再次使用！");
+            return false;
+        }
+        
+        if (isOnCooldown)
+        {
+            Debug.LogWarning($"冲刺冷却中！剩余时间: {cooldownRemaining:F1}秒");
+            return false;
+        }
+        
+        return true;
     }
     
     private IEnumerator DashSequence()
     {
         isDashing = true;
+        
+        // 广播冲刺开始状态（使用次数变为0，冷却开始）
+        GameEventManager.RaiseAbilityUsageChanged(0);
+        GameEventManager.RaiseAbilityCooldownChanged(true, dashDuration);
         
         // 1. 播放动画
         if (animator != null)
@@ -97,7 +192,50 @@ public class AbilityDash : MonoBehaviour
             animator.SetTrigger(flyTrigger);
         }
         
+        // 冲刺结束，开始冷却
         isDashing = false;
+        StartCooldown();
+    }
+    
+    private void StartCooldown()
+    {
+        isOnCooldown = true;
+        cooldownRemaining = cooldownDuration;
+        
+        // 广播冷却开始
+        GameEventManager.RaiseAbilityCooldownChanged(true, cooldownRemaining);
+        
+        StartCoroutine(CooldownCoroutine());
+    }
+    
+    private IEnumerator CooldownCoroutine()
+    {
+        yield return new WaitForSeconds(cooldownDuration);
+        
+        isOnCooldown = false;
+        cooldownRemaining = 0f;
+        
+        // 冷却结束，广播状态（使用次数变为1，冷却结束）
+        GameEventManager.RaiseAbilityUsageChanged(1);
+        GameEventManager.RaiseAbilityCooldownChanged(false, 0f);
+    }
+    
+    // 获取是否可用（返回1或0）
+    public int GetRemainingUses()
+    {
+        return CanUseAbility() ? 1 : 0;
+    }
+    
+    // 获取冷却状态
+    public bool IsOnCooldown()
+    {
+        return isOnCooldown;
+    }
+    
+    // 获取冷却剩余时间
+    public float GetCooldownRemaining()
+    {
+        return cooldownRemaining;
     }
     
     // 新增：Trigger检测方法

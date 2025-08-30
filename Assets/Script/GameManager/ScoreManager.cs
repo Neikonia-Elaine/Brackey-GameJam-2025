@@ -15,8 +15,13 @@ public class ScoreManager : MonoBehaviour
 
     // 定义各种加分事件的分值
     [Header("加分设置")]
-    [SerializeField] private int biscuitScore = 50;
+    [SerializeField] private int biscuitScore = 300;
     [SerializeField] private int humanScore = 100;
+    [SerializeField] private int carScore = 40;
+    [SerializeField] private int hatUmbrellaScore = 150;
+    [SerializeField] private int platformScore = 200;
+
+
 
     void Awake()
     {
@@ -54,7 +59,10 @@ public class ScoreManager : MonoBehaviour
         if (GameEventManager.Instance != null)
         {
             GameEventManager.Instance.OnBiscuitCollected += HandleBiscuitCollected;
-            
+            GameEventManager.Instance.OnHumanHit += HandleHumanHit;
+            GameEventManager.Instance.OnCarHit += HandleCarHit;
+            GameEventManager.Instance.OnHatUmbrellaHit += HandleHatUmbrellaHit;
+            GameEventManager.Instance.onPlatformHit += () => AddScore(platformScore);
         }
     }
 
@@ -63,6 +71,10 @@ public class ScoreManager : MonoBehaviour
         if (GameEventManager.Instance != null)
         {
             GameEventManager.Instance.OnBiscuitCollected -= HandleBiscuitCollected;
+            GameEventManager.Instance.OnHumanHit -= HandleHumanHit;
+            GameEventManager.Instance.OnCarHit -= HandleCarHit;
+            GameEventManager.Instance.OnHatUmbrellaHit -= HandleHatUmbrellaHit;
+            GameEventManager.Instance.onPlatformHit -= () => AddScore(platformScore);
         }
     }
 
@@ -75,6 +87,16 @@ public class ScoreManager : MonoBehaviour
     private void HandleHumanHit()
     {
         AddScore(humanScore);
+    }
+
+    private void HandleCarHit()
+    {
+        AddScore(carScore);
+    }
+
+    private void HandleHatUmbrellaHit()
+    {
+        AddScore(hatUmbrellaScore);
     }
 
     private void OnSceneLoaded_ResetScore(Scene scene, LoadSceneMode mode)
