@@ -131,7 +131,8 @@ public class HumanController : MonoBehaviour
     {
         if (items.Contains(Items.Biscuit))
         {
-            GameObject biscuit = Instantiate(biscuitPrefab, transform.position, Quaternion.identity);
+            Vector3 biscuitPosition = new Vector3(transform.position.x + 0.5f, transform.position.y - 0.2f, transform.position.z);
+            GameObject biscuit = Instantiate(biscuitPrefab, biscuitPosition, Quaternion.identity);
             biscuit.transform.parent = transform;
         }
 

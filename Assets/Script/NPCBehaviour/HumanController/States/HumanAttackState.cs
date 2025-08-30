@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 
 /*
 NPC Attack状态
@@ -12,6 +13,7 @@ public class HumanAttackState : BaseState
     private List<Items> items;
     private Animator animator;
     private Transform humanTransform;
+    private GameObject bubble;
 
     [Header("Attack State Config")]
     private HumanBlackboard humanBlackboard;
@@ -27,6 +29,9 @@ public class HumanAttackState : BaseState
 
     private bool isAttacking;
     private bool isAttacked;
+
+    [Header("Attack Messages")]
+    private List<string> attackMessages;
 
     // 构造函数，设置可转换状态，设置黑板
     public HumanAttackState(StateMachine stateMachine, GameObject owner) : base(stateMachine, owner)
@@ -44,6 +49,7 @@ public class HumanAttackState : BaseState
             items = humanBlackboard.items;
             animator = humanBlackboard.animator;
             humanTransform = humanBlackboard.humanTransform;
+            bubble = humanBlackboard.bubble;
             // Get Attack State Config
             windupDuration = humanBlackboard.windupDuration;
             attackDuration = humanBlackboard.attackDuration;
@@ -51,6 +57,7 @@ public class HumanAttackState : BaseState
             cooldownDuration = humanBlackboard.cooldownDuration;
             bulletPrefab = humanBlackboard.bulletPrefab;
             bulletSpeed = humanBlackboard.bulletSpeed;
+            attackMessages = humanBlackboard.attackMessages;
         }
     }
 
@@ -79,6 +86,9 @@ public class HumanAttackState : BaseState
         if (!isAttacked && !isAttacking)
         {
             PlayAttackAnimation();
+            int randomIndex = UnityEngine.Random.Range(0, attackMessages.Count);
+            bubble.GetComponent<TextMeshPro>().text = attackMessages[randomIndex];
+            bubble.SetActive(true);
             isAttacking = true;
         }
 
@@ -102,6 +112,11 @@ public class HumanAttackState : BaseState
                 RequestTransition(HumanStates.Idle);
             }
         }
+    }
+
+    public override void OnExit()
+    {
+        bubble.SetActive(false);
     }
 
     private void PlayAttackAnimation()

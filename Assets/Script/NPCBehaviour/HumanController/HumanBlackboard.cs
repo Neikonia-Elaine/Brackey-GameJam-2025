@@ -42,4 +42,27 @@ public class HumanBlackboard : BlackBoard
     public bool isHurt;
     public float hurtDuration;
 
+    [Header("Human Attack Messages")]
+    public List<string> attackMessages = new List<string>
+    {
+        "I will kill you...",
+        "You will pay for it!",
+        "Today's dinner is birds.",
+        "Suffer, as I have!",
+        "Now, witness your folly!",
+        "Die!Die!Die!",
+    };
+
+    [Header("Human Hurt Messages")]
+    public List<string> hurtMessages = new List<string>
+    {
+        "Damn it!",
+        "Oh no!",
+        "Baby more!",
+        "Holy crap!",
+        "Why so many birds?",
+        "How dare you?",
+        "Yuck!",
+        "Eww!",
+    };
 }

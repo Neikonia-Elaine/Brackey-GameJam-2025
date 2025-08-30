@@ -46,12 +46,12 @@ public class CarMoveState : BaseState
         if (mainCamera.transform.position.x > carTransform.position.x)
         {
             dir = new Vector2(1, 0);
-            carTransform.localScale = new Vector3(-1, 1, 1);
+            carTransform.localScale = Vector3.Scale(carTransform.localScale, new Vector3(-1, 1, 1));
         }
         else
         {
             dir = new Vector2(-1, 0);
-            carTransform.localScale = new Vector3(1, 1, 1);
+            carTransform.localScale = Vector3.Scale(carTransform.localScale, new Vector3(1, 1, 1));
         }
     }
 

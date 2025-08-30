@@ -19,7 +19,7 @@ public class HatController : MonoBehaviour
         parent = transform.parent.gameObject;
         rb = GetComponent<Rigidbody2D>();
         colliders = GetComponents<Collider2D>();
-        offset = new Vector3(0f, 1.5f, 0f);
+        offset = new Vector3(0f, 2f, -1f);
         
         // 订阅Dash碰撞事件
         AbilityDash.OnDashCollision += OnDashHit;
@@ -34,6 +34,12 @@ public class HatController : MonoBehaviour
     // 处理Dash撞击事件
     private void OnDashHit(GameObject hitObject)
     {
+        // 检查是否是自己
+        if (hitObject != gameObject)
+        {
+            return;
+        }
+
         // 从父对象的items列表中移除帽子
         HumanController humanController = parent.GetComponent<HumanController>();
         if (humanController != null && humanController.items.Contains(Items.Hat))
@@ -67,11 +73,11 @@ public class HatController : MonoBehaviour
         rb.mass = 1f;
         rb.freezeRotation = false;
         
-        // 计算飞出方向（更强的力度，因为被Dash撞击）
+        // 计算飞出方向
         Vector2 flyDirection = new Vector2(Random.Range(-1f, 1f), 1f).normalized;
-        rb.AddForce(flyDirection * flyForce, ForceMode2D.Impulse); // 更强的力度
+        rb.AddForce(flyDirection * flyForce, ForceMode2D.Impulse);
         
-        // 施加更强的旋转
+        // 施加旋转
         float torque = 20f;
         rb.AddTorque(torque, ForceMode2D.Impulse);
         

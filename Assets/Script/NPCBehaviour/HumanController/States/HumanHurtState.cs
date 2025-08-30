@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 /*
 NPC Hurt状态
@@ -29,6 +30,9 @@ public class HumanHurtState : BaseState
     private float hurtDuration;
     private Rigidbody2D rb;
 
+    [Header("Hurt Messages")]
+    private List<string> hurtMessages;
+
     // 构造函数，设置可转换状态，设置黑板
     public HumanHurtState(StateMachine stateMachine, GameObject owner) : base(stateMachine, owner)
     {
@@ -51,7 +55,7 @@ public class HumanHurtState : BaseState
             
             // Get Hurt State Config
             hurtDuration = humanBlackboard.hurtDuration;
-
+            hurtMessages = humanBlackboard.hurtMessages;
         }
     }
 
@@ -63,13 +67,13 @@ public class HumanHurtState : BaseState
         // 受伤时，取消碰撞layer
         foreach (Collider2D collider in physicsColliders)
         {
-            collider.includeLayers = LayerMask.GetMask("Nothing");
+            collider.excludeLayers = LayerMask.GetMask("Player", "detector");
         }
 
         // 掉落Biscuit
         if (items.Contains(Items.Biscuit))
         {
-            GameObject biscuit = humanGameObject.transform.GetChild(1).gameObject;
+            GameObject biscuit = humanGameObject.transform.GetChild(3).gameObject;
             biscuit.transform.parent = null;
             biscuit.GetComponent<Rigidbody2D>().simulated = true;
             biscuit.GetComponent<Collider2D>().enabled = true;
@@ -78,6 +82,8 @@ public class HumanHurtState : BaseState
         }
 
         // 人类受伤时，说话气泡框显示
+        int randomIndex = UnityEngine.Random.Range(0, hurtMessages.Count);
+        bubble.GetComponent<TextMeshPro>().text = hurtMessages[randomIndex];
         bubble.SetActive(true);
 
         hurtTimer = 0f;
@@ -109,7 +115,7 @@ public class HumanHurtState : BaseState
         // 受伤结束时，恢复碰撞layer
         foreach (Collider2D collider in physicsColliders)
         {
-            collider.includeLayers = LayerMask.GetMask("Player","detector");
+            collider.excludeLayers = LayerMask.GetMask("Nothing");
         }
     }
 }

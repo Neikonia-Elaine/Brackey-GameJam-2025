@@ -364,13 +364,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   debugMode: 0
-  biscuitPrefab: {fileID: 7880870378356672417, guid: 4d6439b256fddac42bd46fdcfd3cd886, type: 3}
+  biscuitPrefab: {fileID: 2478609625099978989, guid: bd7216fd4fff2cc4fa370c28efa932f1, type: 3}
   hatPrefab: {fileID: 5048647042180520474, guid: 7dcdc01af0dbeab4690fdea4d01cf255, type: 3}
   bulletPrefab: {fileID: 4345289027586783834, guid: 61712df5cd2512641ab45b2765381b37, type: 3}
   items: 
   physicsColliders: []
   triggerColliders: []
   bubble: {fileID: 0}
+  canMove: 1
+  movementRadius: 3
   humanBlackboard:
     humanGameObject: {fileID: 0}
     humanTransform: {fileID: 0}
@@ -385,6 +387,7 @@ MonoBehaviour:
     moveDuration: 0
     moveSpeed: 0
     moveRange: 0
+    canMove: 0
     movementAreaCenter: {x: 0, y: 0}
     movementRadius: 0
     boundsBuffer: 0.5
@@ -396,6 +399,22 @@ MonoBehaviour:
     bulletSpeed: 0
     isHurt: 0
     hurtDuration: 0
+    attackMessages:
+    - I will kill you...
+    - You will pay for it!
+    - Today's dinner is birds.
+    - Suffer, as I have!
+    - Now, witness your folly!
+    - Die!Die!Die!
+    hurtMessages:
+    - Damn it!
+    - Oh no!
+    - Baby more!
+    - Holy crap!
+    - Why so many birds?
+    - How dare you?
+    - Yuck!
+    - Eww!
   hat: {fileID: 0}
 --- !u!1 &7928170629832326367
 GameObject:

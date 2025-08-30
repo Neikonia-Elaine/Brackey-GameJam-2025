@@ -31,4 +31,12 @@ public class BulletController : MonoBehaviour
             transform.position.y > mainCamera.ScreenToWorldPoint(new Vector3(0, Screen.height, 0)).y + screenOffset ||
             transform.position.y < mainCamera.ScreenToWorldPoint(new Vector3(0, 0, 0)).y - screenOffset;
     }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.gameObject.tag == "Ground")
+        {
+            Destroy(gameObject);
+        }
+    }
 }
