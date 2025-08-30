@@ -28,8 +28,11 @@ public class MySceneManager : MonoBehaviour
     {
         TryLoadAdditive(level1Name);
         levelSceneName = level1Name;
-        TimerManager.Instance?.StopCountdown();
+        Time.timeScale = 1f;
+        Debug.Log("Level1SceneLoad: Time scale set to 1.！！！");
+        // TimerManager.Instance?.StopCountdown();
         // Timer.SetActive(false);
+        GameEventManager.Instance.TriggerGameResumed();
         level1Load = true;
 
     }
@@ -43,12 +46,16 @@ public class MySceneManager : MonoBehaviour
         TryLoadAdditive(level2Name);
         TimerManager.Instance?.StartCountdown(180);
         levelSceneName = level2Name;
+        Time.timeScale = 1f;
+        GameEventManager.Instance.TriggerGameResumed();
         Debug.Log("Level2SceneLoad: Timer started for 180 seconds.");
     }
     public void Level3SceneLoad()
     {
         TryLoadAdditive(level3Name);
         levelSceneName = level3Name;
+        Time.timeScale = 1f;
+        GameEventManager.Instance.TriggerGameResumed();
         TimerManager.Instance?.StartCountdown(180);
     }
 

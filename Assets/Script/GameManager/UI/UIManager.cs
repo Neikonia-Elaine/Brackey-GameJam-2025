@@ -44,6 +44,7 @@ public class UIManager : MonoBehaviour
 
     public void ShowTimerUI()
     {
+        
         if (TimerUI) TimerUI.SetActive(true);
         Debug.Log("Timer UI is now shown.");
     }
@@ -53,7 +54,7 @@ public class UIManager : MonoBehaviour
         HideAllPanels();
         if (bakcground) bakcground.SetActive(true);
         if (menuUI) menuUI.SetActive(true);
-        MySceneManager sceneManager = FindObjectOfType<MySceneManager>();
+        // MySceneManager sceneManager = FindObjectOfType<MySceneManager>();
         sceneManager?.CloseCurrentLevel();
     }
 
@@ -72,6 +73,19 @@ public class UIManager : MonoBehaviour
             if (inGameUI) inGameUI.SetActive(true);
             ShowTimerUI();
         }
-        
+
+    }
+    
+    public void QuitGame()
+    {
+        Debug.Log("退出游戏...");
+
+        // 在编辑器里退出（仅在 Unity Editor 有效）
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        // 打包成应用后退出（Windows / Mac / 移动端）
+        Application.Quit();
+#endif
     }
 }

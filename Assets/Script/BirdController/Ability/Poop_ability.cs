@@ -15,12 +15,24 @@ public class AbilityPoop : MonoBehaviour
     public int maxUsageCount = 150; // 最大使用次数
     public int usesPerCooldown = 5; // 每次冷却前可使用的次数
     public float cooldownDuration = 1.5f; // 冷却时间（秒）
+
+    [Header("Cooldown Policy")]
+    [Tooltip("切换角色时是否直接清除冷却并重置本周期计数")]
+    public bool resetCooldownOnSwitch = true;
+
+    [Tooltip("使用真实时间（不受 timeScale 影响）。为 false 时走 Time.time → 暂停时CD暂停。")]
+    public bool useRealtimeCooldown = false;
     
     [Header("Current Status (只读)")]
     [SerializeField] private int currentUsageCount = 0; // 当前已使用次数
     [SerializeField] private int currentCooldownUses = 0; // 当前冷却周期内的使用次数
     [SerializeField] private bool isOnCooldown = false; // 是否在冷却中
     [SerializeField] private float cooldownRemaining = 0f; // 剩余冷却时间
+
+    // ===== 新增：时间戳 CD =====
+    private float cooldownEndTime = -1f; // <0 表示不在CD
+    private float _nextUiTickTime = 0f;
+    private float Now => useRealtimeCooldown ? Time.realtimeSinceStartup : Time.time;
 
     // 防止重复订阅
     private bool _switchSubscribed = false;
@@ -38,7 +50,8 @@ public class AbilityPoop : MonoBehaviour
             }
         }
         
-        // 启用时广播当前状态
+        // 恢复时即时结算冷却并广播
+        RecomputeCooldownState();
         BroadcastCurrentState();
     }
 
@@ -55,32 +68,52 @@ public class AbilityPoop : MonoBehaviour
     // 角色切换事件处理器
     private void OnSwitchedHandler()
     {
-        // 只有激活的能力才广播
-        if (gameObject.activeInHierarchy && enabled)
+        if (!gameObject.activeInHierarchy || !enabled) return;
+
+        if (resetCooldownOnSwitch)
         {
-            BroadcastCurrentState();
+            // 切换直接跳过CD，并重置本周期使用计数
+            isOnCooldown = false;
+            cooldownEndTime = -1f;
+            cooldownRemaining = 0f;
+            currentCooldownUses = 0;
         }
+        else
+        {
+            RecomputeCooldownState();
+        }
+
+        BroadcastCurrentState();
     }
 
     // 广播当前状态
     public void BroadcastCurrentState()
     {
         GameEventManager.RaiseAbilityUsageChanged(GetRemainingUses());
-        GameEventManager.RaiseAbilityCooldownChanged(isOnCooldown, cooldownRemaining);
+        GameEventManager.RaiseAbilityCooldownChanged(IsOnCooldown(), GetCooldownRemaining());
     }
     
     private void Update()
     {
-        // 更新冷却时间显示
-        if (isOnCooldown)
+        // 时间戳方式更新冷却
+        if (!isOnCooldown) return;
+
+        cooldownRemaining = Mathf.Max(0f, cooldownEndTime - Now);
+
+        if (cooldownRemaining <= 0f)
         {
-            cooldownRemaining = Mathf.Max(0, cooldownRemaining - Time.deltaTime);
-            
-            // 每0.1秒更新一次UI
-            if (Time.time % 0.1f < Time.deltaTime)
-            {
-                GameEventManager.RaiseAbilityCooldownChanged(true, cooldownRemaining);
-            }
+            isOnCooldown = false;
+            cooldownEndTime = -1f;
+            cooldownRemaining = 0f;
+            GameEventManager.RaiseAbilityCooldownChanged(false, 0f);
+            return;
+        }
+
+        // 每0.1秒更新一次UI
+        if (Now >= _nextUiTickTime)
+        {
+            GameEventManager.RaiseAbilityCooldownChanged(true, cooldownRemaining);
+            _nextUiTickTime = Now + 0.1f;
         }
     }
     
@@ -117,11 +150,22 @@ public class AbilityPoop : MonoBehaviour
             return false;
         }
         
-        // 检查是否在冷却中
-        if (isOnCooldown)
+        // 检查是否在冷却中（按时间戳即时结算一次）
+        if (IsOnCooldown())
         {
-            Debug.LogWarning($"技能冷却中！剩余时间: {cooldownRemaining:F1}秒");
-            return false;
+            float remain = GetCooldownRemaining();
+            if (remain > 0f)
+            {
+                Debug.LogWarning($"技能冷却中！剩余时间: {remain:F1}秒");
+                return false;
+            }
+            else
+            {
+                // 时间到了但标志未清理
+                isOnCooldown = false;
+                cooldownEndTime = -1f;
+                cooldownRemaining = 0f;
+            }
         }
         
         return true;
@@ -137,7 +181,7 @@ public class AbilityPoop : MonoBehaviour
         }
         else
         {
-            // 使用角色位置加上偏移，向下方生成
+            // 使用角色位置加上偏移
             spawnPosition = transform.position + spawnOffset;
         }
         
@@ -194,27 +238,34 @@ public class AbilityPoop : MonoBehaviour
     private void StartCooldown()
     {
         isOnCooldown = true;
+        cooldownEndTime = Now + cooldownDuration;
         cooldownRemaining = cooldownDuration;
+        _nextUiTickTime = Now; // 立刻推一次 UI
+
         currentCooldownUses = 0; // 重置当前周期使用次数
         
         // 触发冷却开始事件
         GameEventManager.RaiseAbilityCooldownChanged(true, cooldownRemaining);
         
         Debug.Log($"技能进入冷却，持续 {cooldownDuration} 秒");
-        StartCoroutine(CooldownCoroutine());
+        // 不再使用协程；由时间戳 + Update 驱动
     }
-    
-    private IEnumerator CooldownCoroutine()
+
+    private void RecomputeCooldownState()
     {
-        yield return new WaitForSeconds(cooldownDuration);
-        
-        isOnCooldown = false;
-        cooldownRemaining = 0f;
-        
-        // 触发冷却结束事件
-        GameEventManager.RaiseAbilityCooldownChanged(false, 0f);
-        
-        Debug.Log("技能冷却结束！");
+        if (!isOnCooldown) return;
+
+        float remain = Mathf.Max(0f, cooldownEndTime - Now);
+        if (remain <= 0f)
+        {
+            isOnCooldown = false;
+            cooldownEndTime = -1f;
+            cooldownRemaining = 0f;
+        }
+        else
+        {
+            cooldownRemaining = remain;
+        }
     }
     
     // 获取剩余使用次数
@@ -226,7 +277,7 @@ public class AbilityPoop : MonoBehaviour
     // 获取当前周期剩余次数
     public int GetCurrentCycleRemainingUses()
     {
-        if (isOnCooldown) return 0;
+        if (IsOnCooldown()) return 0;
         return usesPerCooldown - currentCooldownUses;
     }
     
@@ -238,7 +289,8 @@ public class AbilityPoop : MonoBehaviour
         currentCooldownUses = 0;
         isOnCooldown = false;
         cooldownRemaining = 0f;
-        StopAllCoroutines();
+        cooldownEndTime = -1f;
+        StopAllCoroutines(); // 保留你的调试习惯（虽然现在不再用协程）
         
         // 重置后广播新状态
         BroadcastCurrentState();
@@ -246,15 +298,17 @@ public class AbilityPoop : MonoBehaviour
         Debug.Log("使用次数已重置！");
     }
     
-    // 获取冷却剩余时间
+    // 获取冷却剩余时间（基于时间戳动态返回）
     public float GetCooldownRemaining()
     {
-        return cooldownRemaining;
+        if (!isOnCooldown) return 0f;
+        return Mathf.Max(0f, cooldownEndTime - Now);
     }
     
-    // 检查是否在冷却中
+    // 检查是否在冷却中（基于时间戳动态判断）
     public bool IsOnCooldown()
     {
-        return isOnCooldown;
+        if (!isOnCooldown) return false;
+        return (cooldownEndTime - Now) > 0f;
     }
 }

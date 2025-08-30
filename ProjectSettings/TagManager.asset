@@ -11,6 +11,7 @@ TagManager:
   - Vehicle
   - Boom
   - Bubble
+  - Wall
   layers:
   - Default
   - TransparentFX
