@@ -33,8 +33,8 @@ public class GameEventManager : MonoBehaviour
     public event Action OnSwitched;
 
     // === 简化的能力事件 ===
-    public static event System.Action<AbilityType, int> OnAbilityUsageChanged;
-    public static event System.Action<AbilityType, bool, float> OnAbilityCooldownChanged;
+    public static event Action<int> OnAbilityUsageChanged;
+    public static event System.Action<bool, float> OnAbilityCooldownChanged;
 
     void Awake()
     {
@@ -94,9 +94,9 @@ public class GameEventManager : MonoBehaviour
     }
 
     // === 简化的能力事件触发方法 ===
-    public static void RaiseAbilityUsageChanged(AbilityType type, int remainingUses)
-    => OnAbilityUsageChanged?.Invoke(type, remainingUses);
+    public static void RaiseAbilityUsageChanged(int remainingUses)
+    => OnAbilityUsageChanged?.Invoke(remainingUses);
 
-    public static void RaiseAbilityCooldownChanged(AbilityType type, bool isOnCooldown, float remainingTime)
-        => OnAbilityCooldownChanged?.Invoke(type, isOnCooldown, remainingTime);
+    public static void RaiseAbilityCooldownChanged(bool isOnCooldown, float remainingTime)
+        => OnAbilityCooldownChanged?.Invoke(isOnCooldown, remainingTime);
 }
