@@ -62,8 +62,8 @@ public class AbilityBomb : MonoBehaviour
     // 广播当前状态
     public void BroadcastCurrentState()
     {
-        GameEventManager.RaiseAbilityUsageChanged(GetRemainingUses());
-        GameEventManager.RaiseAbilityCooldownChanged(isOnCooldown, cooldownRemaining);
+        GameEventManager.RaiseAbilityUsageChanged(AbilityType.Bomb, GetRemainingUses());
+        GameEventManager.RaiseAbilityCooldownChanged(AbilityType.Bomb, isOnCooldown, cooldownRemaining);
     }
     
     private void Update()
@@ -75,7 +75,7 @@ public class AbilityBomb : MonoBehaviour
             // 每0.1秒更新一次UI
             if (Time.time % 0.1f < Time.deltaTime)
             {
-                GameEventManager.RaiseAbilityCooldownChanged(true, cooldownRemaining);
+                GameEventManager.RaiseAbilityCooldownChanged(AbilityType.Bomb, true, cooldownRemaining);
             }
         }
     }
@@ -137,7 +137,7 @@ public class AbilityBomb : MonoBehaviour
         currentUses++;
         
         // 触发使用次数变化事件
-        GameEventManager.RaiseAbilityUsageChanged(GetRemainingUses());
+        GameEventManager.RaiseAbilityUsageChanged(AbilityType.Bomb, GetRemainingUses());
         
         StartCooldown();
     }
@@ -148,7 +148,7 @@ public class AbilityBomb : MonoBehaviour
         cooldownRemaining = cooldownDuration;
         
         // 触发冷却开始事件
-        GameEventManager.RaiseAbilityCooldownChanged(true, cooldownRemaining);
+        GameEventManager.RaiseAbilityCooldownChanged(AbilityType.Bomb, true, cooldownRemaining);
         
         StartCoroutine(CooldownCoroutine());
     }
@@ -161,7 +161,7 @@ public class AbilityBomb : MonoBehaviour
         cooldownRemaining = 0f;
         
         // 触发冷却结束事件
-        GameEventManager.RaiseAbilityCooldownChanged(false, 0f);
+        GameEventManager.RaiseAbilityCooldownChanged(AbilityType.Bomb, false, 0f);
     }
     
     public int GetRemainingUses()
@@ -179,6 +179,18 @@ public class AbilityBomb : MonoBehaviour
     public float GetCooldownRemaining()
     {
         return cooldownRemaining;
+    }
+
+    // 获取玩家控制器（示例实现，根据你的项目结构调整）
+    private PlayerController FindPlayerController()
+    {
+        // 假设 PlayerController 挂载在同一个 GameObject 或父对象
+        PlayerController controller = GetComponent<PlayerController>();
+        if (controller == null)
+        {
+            controller = GetComponentInParent<PlayerController>();
+        }
+        return controller;
     }
     
     [ContextMenu("重置使用次数")]

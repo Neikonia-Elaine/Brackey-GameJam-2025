@@ -81,12 +81,13 @@ public class Bomb : MonoBehaviour
         {
             animator.SetTrigger("explode");
         }
-        
+
         // 只有碰到可摧毁平台才发出事件
         if (IsDestructiblePlatform(other))
         {
             Debug.Log($"碰到可摧毁平台 {other.name}，发出爆炸事件");
             OnBombCollision?.Invoke(other);
+            GameEventManager.Instance.TriggerPlatformHit();
         }
         else
         {

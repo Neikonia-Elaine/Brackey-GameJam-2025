@@ -1,126 +1,116 @@
+// AbilityUI.cs
 using UnityEngine;
 using TMPro;
-using System;
 
 public class AbilityUI : MonoBehaviour
 {
     [Header("UI References")]
     public TextMeshProUGUI numberText;  // 显示剩余次数
     public TextMeshProUGUI cdText;      // 显示冷却时间
-    
+
     [Header("Ability Type")]
-    public AbilityType abilityType = AbilityType.Poop; // 选择要监听的能力类型
-    
+    public AbilityType abilityType = AbilityType.Poop; // 这个 UI 关心哪一种能力
+
     [Header("Display Settings")]
     public string numberPrefix = "";     // 数字前缀，如 "×"
     public string cdSuffix = "s";        // 冷却时间后缀
-    public bool showZeroCount = false;   // 是否显示0次数
-    
+    public bool showZeroCount = false;   // 是否显示 0 次数
+
     [Header("Debug")]
     public bool showDebugLogs = true;
 
+    // 记录是否收到过 usage 事件（用于 Dash：初始 1，直到首次事件到来）
+    private bool _hasSeenUsageEvent = false;
+
     private void OnEnable()
     {
-        // 只订阅统一的能力事件
-        GameEventManager.OnAbilityUsageChanged += OnUsageChanged;
-        GameEventManager.OnAbilityCooldownChanged += OnCooldownChanged;
-        
-        // 订阅角色切换事件
-        if (GameEventManager.Instance != null)
-        {
-            GameEventManager.Instance.OnSwitched += OnCharacterSwitched;
-        }
-        
-        // 启动时刷新一次
-        RefreshCurrentAbility();
+        // 只订阅“带类型”的统一能力事件
+        GameEventManager.OnAbilityUsageChanged   += OnUsageChangedTyped;
+        GameEventManager.OnAbilityCooldownChanged += OnCooldownChangedTyped;
+
+        // 初始显示：Dash 文本=1；其余隐藏或按配置
+        _hasSeenUsageEvent = false;
+        InitDisplay();
     }
 
     private void OnDisable()
     {
-        // 取消订阅事件
-        GameEventManager.OnAbilityUsageChanged -= OnUsageChanged;
-        GameEventManager.OnAbilityCooldownChanged -= OnCooldownChanged;
-        
-        // 取消订阅角色切换事件
-        if (GameEventManager.Instance != null)
+        GameEventManager.OnAbilityUsageChanged   -= OnUsageChangedTyped;
+        GameEventManager.OnAbilityCooldownChanged -= OnCooldownChangedTyped;
+    }
+
+    private void InitDisplay()
+    {
+        // 冷却初始隐藏
+        ApplyCooldown(false, 0f);
+
+        // 次数初始：
+        if (abilityType == AbilityType.Dash)
         {
-            GameEventManager.Instance.OnSwitched -= OnCharacterSwitched;
+            // Dash 特殊：初始文字=1，直到收到事件再更新
+            ApplyNumber(1, forceShow:true);
+        }
+        else
+        {
+            // 其他能力：初始不确定，先按 0 逻辑处理（通常隐藏）
+            ApplyNumber(0);
         }
     }
 
-    // 角色切换回调
-    private void OnCharacterSwitched()
+    // —— 次数事件（带能力类型）——
+    private void OnUsageChangedTyped(AbilityType type, int remainingUses)
     {
-        if (showDebugLogs) 
-            Debug.Log($"AbilityUI [{abilityType}]: Character switched, refreshing display");
-        
-        RefreshCurrentAbility();
+        if (type != abilityType) return;
+        _hasSeenUsageEvent = true;
+
+        if (showDebugLogs) Debug.Log($"[AbilityUI:{type}] uses = {remainingUses}");
+        ApplyNumber(remainingUses);
     }
 
-    // 使用次数变化回调
-    private void OnUsageChanged(int remainingUses)
+    // —— 冷却事件（带能力类型）——
+    private void OnCooldownChangedTyped(AbilityType type, bool isOnCooldown, float remainingTime)
     {
-        if (showDebugLogs) 
-            Debug.Log($"AbilityUI [{abilityType}]: Usage changed to {remainingUses}");
-        
-        UpdateNumberDisplay(remainingUses);
+        if (type != abilityType) return;
+
+        if (showDebugLogs) Debug.Log($"[AbilityUI:{type}] cd = {isOnCooldown}, t = {remainingTime:F1}");
+        ApplyCooldown(isOnCooldown, remainingTime);
     }
 
-    // 冷却状态变化回调
-    private void OnCooldownChanged(bool isOnCooldown, float remainingTime)
+    // 渲染：次数
+    private void ApplyNumber(int remainingUses, bool forceShow = false)
     {
-        if (showDebugLogs) 
-            Debug.Log($"AbilityUI [{abilityType}]: Cooldown changed - OnCD: {isOnCooldown}, Time: {remainingTime:F1}s");
-        
-        UpdateCooldownDisplay(isOnCooldown, remainingTime);
-    }
+        if (!numberText) return;
 
-    // 刷新当前能力状态
-    private void RefreshCurrentAbility()
-    {
-        PlayerController controller = FindObjectOfType<PlayerController>();
-        if (controller == null) 
+        // Dash：如果还没收到过 usage 事件，并且本次传的是“无次数语义”（<0），保持初始 1 不变
+        if (abilityType == AbilityType.Dash && !_hasSeenUsageEvent && remainingUses < 0)
         {
-            if (showDebugLogs) Debug.LogWarning("AbilityUI: No PlayerController found");
+            numberText.gameObject.SetActive(true);
+            numberText.text = numberPrefix + "1";
             return;
         }
-        
-        // 直接根据能力类型查询对应的能力状态
-        switch (abilityType)
-        {
-            case AbilityType.Poop:
-                if (controller.abilityA != null)
-                {
-                    UpdateNumberDisplay(controller.abilityA.GetRemainingUses());
-                    UpdateCooldownDisplay(controller.abilityA.IsOnCooldown(), controller.abilityA.GetCooldownRemaining());
-                }
-                break;
-                
-            case AbilityType.Bomb:
-                if (controller.abilityC != null)
-                {
-                    UpdateNumberDisplay(controller.abilityC.GetRemainingUses());
-                    UpdateCooldownDisplay(false, 0f); // 需要添加Bomb的冷却状态查询
-                }
-                break;
-                
-            case AbilityType.Dash:
-                UpdateNumberDisplay(-1); // Dash没有次数限制，隐藏数字
-                UpdateCooldownDisplay(false, 0f); // 需要添加Dash的冷却状态查询
-                break;
-        }
-    }
 
-    // 更新数字显示
-    private void UpdateNumberDisplay(int remainingUses)
-    {
-        if (numberText == null) return;
-
-        if (remainingUses < 0) // Dash等没有次数限制的能力
+        // 约定：remainingUses < 0 表示“无次数概念”（例如 Dash）
+        if (remainingUses < 0)
         {
-            numberText.gameObject.SetActive(false);
+            // Dash：如果事件显式给了负数，说明想隐藏或由你自定义
+            // 这里我们选择：Dash 仍显示（一般显示 1 或者由事件给具体值时显示具体值）
+            // 若你希望事件给负数时隐藏，可以改成：numberText.gameObject.SetActive(false);
+            if (abilityType == AbilityType.Dash)
+            {
+                numberText.gameObject.SetActive(true);
+                // 若负数到来但已收到事件，则维持上一次显示；如果需要可以改成固定 1
+                // 这里简单做法：显示 "1"
+                numberText.text = numberPrefix + "1";
+            }
+            else
+            {
+                numberText.gameObject.SetActive(false);
+            }
+            return;
         }
-        else if (remainingUses <= 0 && !showZeroCount)
+
+        // 0 次数是否显示
+        if (remainingUses == 0 && !showZeroCount && !forceShow)
         {
             numberText.gameObject.SetActive(false);
         }
@@ -131,21 +121,20 @@ public class AbilityUI : MonoBehaviour
         }
     }
 
-    // 更新冷却显示
-    private void UpdateCooldownDisplay(bool isOnCooldown, float remainingTime)
+    // 渲染：冷却
+    private void ApplyCooldown(bool isOnCooldown, float remainingTime)
     {
-        if (cdText == null) return;
+        if (!cdText) return;
 
         cdText.gameObject.SetActive(isOnCooldown);
-        
-        if (isOnCooldown && remainingTime > 0)
+        if (isOnCooldown)
         {
             cdText.text = remainingTime.ToString("F1") + cdSuffix;
         }
     }
 }
 
-// 能力类型枚举
+// 能力类型（保持你现有的定义即可）
 public enum AbilityType
 {
     Poop,

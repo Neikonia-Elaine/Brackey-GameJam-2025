@@ -1,0 +1,939 @@
+diff --git a/Assets/Prefabs/PlayerStaff/Poop 2.prefab b/Assets/Prefabs/PlayerStaff/Poop 2.prefab
+index 94705e8..78af256 100644
+--- a/Assets/Prefabs/PlayerStaff/Poop 2.prefab	
++++ b/Assets/Prefabs/PlayerStaff/Poop 2.prefab	
+@@ -153,6 +153,8 @@ MonoBehaviour:
+     collisionSprite: {fileID: 21300000, guid: ab7c46f25bb68c840bfee66f46839a87, type: 3}
+   - objectName: Hat
+     collisionSprite: {fileID: 21300000, guid: 6cd298256e7c7bc4a91c0e52f874c8ca, type: 3}
++  - objectName: Car
++    collisionSprite: {fileID: 21300000, guid: 77908afeb9ae58b48a9d9a12348fe0e6, type: 3}
+   destroyDelay: 1
+   ignoreFirstCollision: 1
+   ignoreCollisionTime: 0.1
+diff --git a/Assets/Scenes/MainScene.unity b/Assets/Scenes/MainScene.unity
+index d511149..483b107 100644
+--- a/Assets/Scenes/MainScene.unity
++++ b/Assets/Scenes/MainScene.unity
+@@ -3292,8 +3292,11 @@ MonoBehaviour:
+   m_Name: 
+   m_EditorClassIdentifier: 
+   currentScore: 0
+-  biscuitScore: 50
++  biscuitScore: 300
+   humanScore: 100
++  carScore: 40
++  hatUmbrellaScore: 150
++  platformScore: 200
+ --- !u!1 &1851222030
+ GameObject:
+   m_ObjectHideFlags: 0
+diff --git a/Assets/Script/BirdController/Ability/Boom.cs b/Assets/Script/BirdController/Ability/Boom.cs
+index 05d1be1..9f81f42 100644
+--- a/Assets/Script/BirdController/Ability/Boom.cs
++++ b/Assets/Script/BirdController/Ability/Boom.cs
+@@ -81,12 +81,13 @@ public class Bomb : MonoBehaviour
+         {
+             animator.SetTrigger("explode");
+         }
+-        
++
+         // 只有碰到可摧毁平台才发出事件
+         if (IsDestructiblePlatform(other))
+         {
+             Debug.Log($"碰到可摧毁平台 {other.name}，发出爆炸事件");
+             OnBombCollision?.Invoke(other);
++            GameEventManager.Instance.TriggerPlatformHit();
+         }
+         else
+         {
+diff --git a/Assets/Script/BirdController/Ability/Boom_ability.cs b/Assets/Script/BirdController/Ability/Boom_ability.cs
+index 8ef0dfd..dc50997 100644
+--- a/Assets/Script/BirdController/Ability/Boom_ability.cs
++++ b/Assets/Script/BirdController/Ability/Boom_ability.cs
+@@ -62,8 +62,8 @@ public class AbilityBomb : MonoBehaviour
+     // 广播当前状态
+     public void BroadcastCurrentState()
+     {
+-        GameEventManager.RaiseAbilityUsageChanged(GetRemainingUses());
+-        GameEventManager.RaiseAbilityCooldownChanged(isOnCooldown, cooldownRemaining);
++        GameEventManager.RaiseAbilityUsageChanged(AbilityType.Bomb, GetRemainingUses());
++        GameEventManager.RaiseAbilityCooldownChanged(AbilityType.Bomb, isOnCooldown, cooldownRemaining);
+     }
+     
+     private void Update()
+@@ -75,7 +75,7 @@ public class AbilityBomb : MonoBehaviour
+             // 每0.1秒更新一次UI
+             if (Time.time % 0.1f < Time.deltaTime)
+             {
+-                GameEventManager.RaiseAbilityCooldownChanged(true, cooldownRemaining);
++                GameEventManager.RaiseAbilityCooldownChanged(AbilityType.Bomb, true, cooldownRemaining);
+             }
+         }
+     }
+@@ -137,7 +137,7 @@ public class AbilityBomb : MonoBehaviour
+         currentUses++;
+         
+         // 触发使用次数变化事件
+-        GameEventManager.RaiseAbilityUsageChanged(GetRemainingUses());
++        GameEventManager.RaiseAbilityUsageChanged(AbilityType.Bomb, GetRemainingUses());
+         
+         StartCooldown();
+     }
+@@ -148,7 +148,7 @@ public class AbilityBomb : MonoBehaviour
+         cooldownRemaining = cooldownDuration;
+         
+         // 触发冷却开始事件
+-        GameEventManager.RaiseAbilityCooldownChanged(true, cooldownRemaining);
++        GameEventManager.RaiseAbilityCooldownChanged(AbilityType.Bomb, true, cooldownRemaining);
+         
+         StartCoroutine(CooldownCoroutine());
+     }
+@@ -161,7 +161,7 @@ public class AbilityBomb : MonoBehaviour
+         cooldownRemaining = 0f;
+         
+         // 触发冷却结束事件
+-        GameEventManager.RaiseAbilityCooldownChanged(false, 0f);
++        GameEventManager.RaiseAbilityCooldownChanged(AbilityType.Bomb, false, 0f);
+     }
+     
+     public int GetRemainingUses()
+@@ -180,6 +180,18 @@ public class AbilityBomb : MonoBehaviour
+     {
+         return cooldownRemaining;
+     }
++
++    // 获取玩家控制器（示例实现，根据你的项目结构调整）
++    private PlayerController FindPlayerController()
++    {
++        // 假设 PlayerController 挂载在同一个 GameObject 或父对象
++        PlayerController controller = GetComponent<PlayerController>();
++        if (controller == null)
++        {
++            controller = GetComponentInParent<PlayerController>();
++        }
++        return controller;
++    }
+     
+     [ContextMenu("重置使用次数")]
+     public void ResetUsageCount()
+diff --git a/Assets/Script/BirdController/Ability/Dash_Ability.cs b/Assets/Script/BirdController/Ability/Dash_Ability.cs
+index 53a761a..968e13a 100644
+--- a/Assets/Script/BirdController/Ability/Dash_Ability.cs
++++ b/Assets/Script/BirdController/Ability/Dash_Ability.cs
+@@ -42,7 +42,7 @@ public class AbilityDash : MonoBehaviour
+         if (transform.parent != null)
+         {
+             healthManager = transform.parent.GetComponent<BirdHealthManager>();
+-            playerController = transform.parent.GetComponent<PlayerController>();
++            playerController = transform.parent.GetComponentInParent<PlayerController>();
+         }
+         
+         if (playerController == null)
+@@ -93,8 +93,8 @@ public class AbilityDash : MonoBehaviour
+     {
+         // Dash的使用次数逻辑：可用时为1，不可用时为0
+         int remainingUses = CanUseAbility() ? 1 : 0;
+-        GameEventManager.RaiseAbilityUsageChanged(remainingUses);
+-        GameEventManager.RaiseAbilityCooldownChanged(isOnCooldown, cooldownRemaining);
++        GameEventManager.RaiseAbilityUsageChanged(AbilityType.Dash, remainingUses);
++        GameEventManager.RaiseAbilityCooldownChanged(AbilityType.Dash, isOnCooldown, cooldownRemaining);
+     }
+     
+     private void Update()
+@@ -106,11 +106,11 @@ public class AbilityDash : MonoBehaviour
+             // 每0.1秒更新一次UI
+             if (Time.time % 0.1f < Time.deltaTime)
+             {
+-                GameEventManager.RaiseAbilityCooldownChanged(true, cooldownRemaining);
++                GameEventManager.RaiseAbilityCooldownChanged(AbilityType.Dash, true, cooldownRemaining);
+                 
+                 // 同时更新使用次数状态
+                 int remainingUses = CanUseAbility() ? 1 : 0;
+-                GameEventManager.RaiseAbilityUsageChanged(remainingUses);
++                GameEventManager.RaiseAbilityUsageChanged(AbilityType.Dash, remainingUses);
+             }
+         }
+     }
+@@ -147,8 +147,8 @@ public class AbilityDash : MonoBehaviour
+         isDashing = true;
+         
+         // 广播冲刺开始状态（使用次数变为0，冷却开始）
+-        GameEventManager.RaiseAbilityUsageChanged(0);
+-        GameEventManager.RaiseAbilityCooldownChanged(true, dashDuration);
++        GameEventManager.RaiseAbilityUsageChanged(AbilityType.Dash, 0);
++        GameEventManager.RaiseAbilityCooldownChanged(AbilityType.Dash, true, dashDuration);
+         
+         // 1. 播放动画
+         if (animator != null)
+@@ -203,7 +203,7 @@ public class AbilityDash : MonoBehaviour
+         cooldownRemaining = cooldownDuration;
+         
+         // 广播冷却开始
+-        GameEventManager.RaiseAbilityCooldownChanged(true, cooldownRemaining);
++        GameEventManager.RaiseAbilityCooldownChanged(AbilityType.Dash, true, cooldownRemaining);
+         
+         StartCoroutine(CooldownCoroutine());
+     }
+@@ -216,8 +216,8 @@ public class AbilityDash : MonoBehaviour
+         cooldownRemaining = 0f;
+         
+         // 冷却结束，广播状态（使用次数变为1，冷却结束）
+-        GameEventManager.RaiseAbilityUsageChanged(1);
+-        GameEventManager.RaiseAbilityCooldownChanged(false, 0f);
++        GameEventManager.RaiseAbilityUsageChanged(AbilityType.Dash, 1);
++        GameEventManager.RaiseAbilityCooldownChanged(AbilityType.Dash, false, 0f);
+     }
+     
+     // 获取是否可用（返回1或0）
+diff --git a/Assets/Script/BirdController/Ability/Poop_ability.cs b/Assets/Script/BirdController/Ability/Poop_ability.cs
+index ef10d18..89fd23f 100644
+--- a/Assets/Script/BirdController/Ability/Poop_ability.cs
++++ b/Assets/Script/BirdController/Ability/Poop_ability.cs
+@@ -62,12 +62,14 @@ public class AbilityPoop : MonoBehaviour
+         }
+     }
+ 
++    // 广播当前状态
+     // 广播当前状态
+     public void BroadcastCurrentState()
+     {
+-        GameEventManager.RaiseAbilityUsageChanged(GetRemainingUses());
+-        GameEventManager.RaiseAbilityCooldownChanged(isOnCooldown, cooldownRemaining);
++        GameEventManager.RaiseAbilityUsageChanged(AbilityType.Poop, GetRemainingUses());
++        GameEventManager.RaiseAbilityCooldownChanged(AbilityType.Poop, isOnCooldown, cooldownRemaining);
+     }
++
+     
+     private void Update()
+     {
+@@ -79,7 +81,7 @@ public class AbilityPoop : MonoBehaviour
+             // 每0.1秒更新一次UI
+             if (Time.time % 0.1f < Time.deltaTime)
+             {
+-                GameEventManager.RaiseAbilityCooldownChanged(true, cooldownRemaining);
++                GameEventManager.RaiseAbilityCooldownChanged(AbilityType.Poop, true, cooldownRemaining);
+             }
+         }
+     }
+@@ -182,7 +184,7 @@ public class AbilityPoop : MonoBehaviour
+         currentCooldownUses++;
+         
+         // 触发使用次数变化事件
+-        GameEventManager.RaiseAbilityUsageChanged(GetRemainingUses());
++        GameEventManager.RaiseAbilityUsageChanged(AbilityType.Poop, GetRemainingUses());
+         
+         // 检查是否需要进入冷却
+         if (currentCooldownUses >= usesPerCooldown)
+@@ -198,7 +200,7 @@ public class AbilityPoop : MonoBehaviour
+         currentCooldownUses = 0; // 重置当前周期使用次数
+         
+         // 触发冷却开始事件
+-        GameEventManager.RaiseAbilityCooldownChanged(true, cooldownRemaining);
++        GameEventManager.RaiseAbilityCooldownChanged(AbilityType.Poop, true, cooldownRemaining);
+         
+         Debug.Log($"技能进入冷却，持续 {cooldownDuration} 秒");
+         StartCoroutine(CooldownCoroutine());
+@@ -212,7 +214,7 @@ public class AbilityPoop : MonoBehaviour
+         cooldownRemaining = 0f;
+         
+         // 触发冷却结束事件
+-        GameEventManager.RaiseAbilityCooldownChanged(false, 0f);
++        GameEventManager.RaiseAbilityCooldownChanged(AbilityType.Poop, false, 0f);
+         
+         Debug.Log("技能冷却结束！");
+     }
+diff --git a/Assets/Script/BirdController/Ability/poop.cs b/Assets/Script/BirdController/Ability/poop.cs
+index 0106b0b..81ef0ed 100644
+--- a/Assets/Script/BirdController/Ability/poop.cs
++++ b/Assets/Script/BirdController/Ability/poop.cs
+@@ -157,6 +157,22 @@ public class Poop : MonoBehaviour
+                     
+                     // 处理碰撞
+                     HandleCollision(config.collisionSprite, config.objectName);
++                    Debug.Log($"Poop碰撞到 {objectName}，切换sprite");
++                    if (config.objectName == "Human")
++                    {
++
++                        GameEventManager.Instance?.TriggerHumanHit();
++                        Debug.Log("触发OnHumanHit事件");
++                    } else if (config.objectName == "Car")
++                    {
++                        GameEventManager.Instance?.TriggerCarHit();
++                        Debug.Log("触发OnCarHit事件");
++                    }
++                    else if (config.objectName == "Hat")
++                    {
++                        GameEventManager.Instance?.TriggerHatUmbrellaHit();
++                        Debug.Log("触发OnHatUmbrellaHit事件");
++                    }
+                     found = true;
+                     break;
+                 }
+diff --git a/Assets/Script/GameManager/GameEventManager.cs b/Assets/Script/GameManager/GameEventManager.cs
+index e45dc3a..e56af9a 100644
+--- a/Assets/Script/GameManager/GameEventManager.cs
++++ b/Assets/Script/GameManager/GameEventManager.cs
+@@ -13,7 +13,7 @@ public class GameEventManager : MonoBehaviour
+                 // 自动创建实例
+                 GameObject go = new GameObject("GameEventManager");
+                 _instance = go.AddComponent<GameEventManager>();
+-                // DontDestroyOnLoad(go);
++                DontDestroyOnLoad(go);
+             }
+             return _instance;
+         }
+@@ -21,14 +21,20 @@ public class GameEventManager : MonoBehaviour
+ 
+     // === 原有游戏事件 ===
+     public event Action OnBiscuitCollected;
++
+     public event Action OnHumanHit;
++    public event Action OnCarHit;
++    public event Action OnHatUmbrellaHit;
++    public event Action onPlatformHit;
+     public static event Action<int> OnHeartCurrentChanged;
+     public event Action OnGamePaused;
++
++    public static event Action OnGameResumed; // 如果需要，可以添加恢复事件
+     public event Action OnSwitched;
+ 
+     // === 简化的能力事件 ===
+-    public static event Action<int> OnAbilityUsageChanged;         // 参数：剩余次数
+-    public static event Action<bool, float> OnAbilityCooldownChanged;  // 参数：是否冷却中，剩余时间
++    public static event System.Action<AbilityType, int> OnAbilityUsageChanged;
++    public static event System.Action<AbilityType, bool, float> OnAbilityCooldownChanged;
+ 
+     void Awake()
+     {
+@@ -52,6 +58,21 @@ public class GameEventManager : MonoBehaviour
+         OnHumanHit?.Invoke();
+     }
+ 
++    public void TriggerCarHit()
++    {
++        OnCarHit?.Invoke();
++    }
++
++    public void TriggerHatUmbrellaHit()
++    {
++        OnHatUmbrellaHit?.Invoke();
++    }
++
++    public void TriggerPlatformHit()
++    {
++        onPlatformHit?.Invoke();
++    }
++
+     public static void RaiseHeartCurrentChanged(int current)
+     {
+         OnHeartCurrentChanged?.Invoke(current);
+@@ -61,6 +82,11 @@ public class GameEventManager : MonoBehaviour
+     {
+         OnGamePaused?.Invoke();
+     }
++
++    public void TriggerGameResumed()
++    {
++        OnGameResumed?.Invoke();
++    }
+     
+     public void TriggerSwitched()
+     {
+@@ -68,13 +94,9 @@ public class GameEventManager : MonoBehaviour
+     }
+ 
+     // === 简化的能力事件触发方法 ===
+-    public static void RaiseAbilityUsageChanged(int remainingUses)
+-    {
+-        OnAbilityUsageChanged?.Invoke(remainingUses);
+-    }
++    public static void RaiseAbilityUsageChanged(AbilityType type, int remainingUses)
++    => OnAbilityUsageChanged?.Invoke(type, remainingUses);
+ 
+-    public static void RaiseAbilityCooldownChanged(bool isOnCooldown, float remainingTime)
+-    {
+-        OnAbilityCooldownChanged?.Invoke(isOnCooldown, remainingTime);
+-    }
++    public static void RaiseAbilityCooldownChanged(AbilityType type, bool isOnCooldown, float remainingTime)
++        => OnAbilityCooldownChanged?.Invoke(type, isOnCooldown, remainingTime);
+ }
+\ No newline at end of file
+diff --git a/Assets/Script/GameManager/MySceneManager.cs b/Assets/Script/GameManager/MySceneManager.cs
+index c1470aa..ef230ef 100644
+--- a/Assets/Script/GameManager/MySceneManager.cs
++++ b/Assets/Script/GameManager/MySceneManager.cs
+@@ -48,7 +48,7 @@ public class MySceneManager : MonoBehaviour
+     public void Level3SceneLoad()
+     {
+         TryLoadAdditive(level3Name);
+-        levelSceneName = level2Name;
++        levelSceneName = level3Name;
+         TimerManager.Instance?.StartCountdown(180);
+     }
+ 
+diff --git a/Assets/Script/GameManager/ScoreManager.cs b/Assets/Script/GameManager/ScoreManager.cs
+index c52fc9a..34c0901 100644
+--- a/Assets/Script/GameManager/ScoreManager.cs
++++ b/Assets/Script/GameManager/ScoreManager.cs
+@@ -15,8 +15,13 @@ public class ScoreManager : MonoBehaviour
+ 
+     // 定义各种加分事件的分值
+     [Header("加分设置")]
+-    [SerializeField] private int biscuitScore = 50;
++    [SerializeField] private int biscuitScore = 300;
+     [SerializeField] private int humanScore = 100;
++    [SerializeField] private int carScore = 40;
++    [SerializeField] private int hatUmbrellaScore = 150;
++    [SerializeField] private int platformScore = 200;
++
++
+ 
+     void Awake()
+     {
+@@ -54,7 +59,10 @@ public class ScoreManager : MonoBehaviour
+         if (GameEventManager.Instance != null)
+         {
+             GameEventManager.Instance.OnBiscuitCollected += HandleBiscuitCollected;
+-            
++            GameEventManager.Instance.OnHumanHit += HandleHumanHit;
++            GameEventManager.Instance.OnCarHit += HandleCarHit;
++            GameEventManager.Instance.OnHatUmbrellaHit += HandleHatUmbrellaHit;
++            GameEventManager.Instance.onPlatformHit += () => AddScore(platformScore);
+         }
+     }
+ 
+@@ -63,6 +71,10 @@ public class ScoreManager : MonoBehaviour
+         if (GameEventManager.Instance != null)
+         {
+             GameEventManager.Instance.OnBiscuitCollected -= HandleBiscuitCollected;
++            GameEventManager.Instance.OnHumanHit -= HandleHumanHit;
++            GameEventManager.Instance.OnCarHit -= HandleCarHit;
++            GameEventManager.Instance.OnHatUmbrellaHit -= HandleHatUmbrellaHit;
++            GameEventManager.Instance.onPlatformHit -= () => AddScore(platformScore);
+         }
+     }
+ 
+@@ -77,6 +89,16 @@ public class ScoreManager : MonoBehaviour
+         AddScore(humanScore);
+     }
+ 
++    private void HandleCarHit()
++    {
++        AddScore(carScore);
++    }
++
++    private void HandleHatUmbrellaHit()
++    {
++        AddScore(hatUmbrellaScore);
++    }
++
+     private void OnSceneLoaded_ResetScore(Scene scene, LoadSceneMode mode)
+     {
+         ResetScore();
+diff --git a/Assets/Script/GameManager/TimerManager.cs b/Assets/Script/GameManager/TimerManager.cs
+index eba25a3..547c1dd 100644
+--- a/Assets/Script/GameManager/TimerManager.cs
++++ b/Assets/Script/GameManager/TimerManager.cs
+@@ -9,15 +9,20 @@ public class TimerManager : MonoBehaviour
+     public event Action<int> OnTimerTick;   // 每秒回调：剩余秒
+     public event Action OnTimerFinished;    // 结束回调
+ 
++    public event Action OnTimerPaused;      // 暂停回调
++    public event Action OnTimerResumed;     // 恢复回调
++
+     private Coroutine timerCoro;
+     public int SecondsLeft { get; private set; } = 0;
+     public bool IsRunning => timerCoro != null;
+ 
++    public bool IsPaused { get; private set; } = false;
++
+     void Awake()
+     {
+         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+         Instance = this;
+-        DontDestroyOnLoad(gameObject);
++        // DontDestroyOnLoad(gameObject);
+     }
+ 
+     public void StartCountdown(int totalSeconds)
+@@ -27,6 +32,85 @@ public class TimerManager : MonoBehaviour
+         timerCoro = StartCoroutine(CoCountdown(totalSeconds));
+     }
+ 
++    void Start()
++    {
++        SubscribeToGameEvents();
++        // ResetScore();
++    }
++
++    void OnDestroy()
++    {
++        if (Instance == this)
++        {
++            UnsubscribeFromGameEvents();
++        }
++    }
++
++    private void SubscribeToGameEvents()
++    {
++        // 订阅各种游戏事件
++        if (GameEventManager.Instance != null)
++        {
++            GameEventManager.Instance.OnGamePaused += HandleGamePaused;
++
++
++        }
++        
++        GameEventManager.OnGameResumed += HandleGameResumed;
++    }
++
++    private void UnsubscribeFromGameEvents()
++    {
++        if (GameEventManager.Instance != null)
++        {
++            GameEventManager.Instance.OnGamePaused -= HandleGamePaused;
++        }
++
++        GameEventManager.OnGameResumed -= HandleGameResumed;
++    }
++    private void HandleGamePaused()
++    {
++        if (IsRunning)
++        {
++            if (IsPaused)
++            {
++                ResumeTimer();
++            }
++            else
++            {
++                PauseTimer();
++            }
++        }
++    }
++
++    private void HandleGameResumed()
++    {
++        if (IsRunning && IsPaused)
++        {
++            ResumeTimer();
++        }
++    }
++
++    public void PauseTimer()
++    {
++        if (IsRunning && !IsPaused)
++        {
++            IsPaused = true;
++            Time.timeScale = 0f; // 暂停游戏时间
++            OnTimerPaused?.Invoke();
++        }
++    }
++
++    public void ResumeTimer()
++    {
++        if (IsRunning && IsPaused)
++        {
++            IsPaused = false;
++            Time.timeScale = 1f; // 恢复游戏时间
++            OnTimerResumed?.Invoke();
++        }
++    }
++
+     public void StopCountdown()
+     {
+         if (timerCoro != null) StopCoroutine(timerCoro);
+@@ -47,7 +131,7 @@ public class TimerManager : MonoBehaviour
+ 
+         while (SecondsLeft > 0)
+         {
+-            yield return new WaitForSecondsRealtime(1f);
++            yield return new WaitForSeconds(1f);
+             SecondsLeft--;
+             OnTimerTick?.Invoke(SecondsLeft);
+         }
+diff --git a/Assets/Script/GameManager/UI/AbilityUI.cs b/Assets/Script/GameManager/UI/AbilityUI.cs
+index ef9557f..bc59870 100644
+--- a/Assets/Script/GameManager/UI/AbilityUI.cs
++++ b/Assets/Script/GameManager/UI/AbilityUI.cs
+@@ -1,126 +1,116 @@
++// AbilityUI.cs
+ using UnityEngine;
+ using TMPro;
+-using System;
+ 
+ public class AbilityUI : MonoBehaviour
+ {
+     [Header("UI References")]
+     public TextMeshProUGUI numberText;  // 显示剩余次数
+     public TextMeshProUGUI cdText;      // 显示冷却时间
+-    
++
+     [Header("Ability Type")]
+-    public AbilityType abilityType = AbilityType.Poop; // 选择要监听的能力类型
+-    
++    public AbilityType abilityType = AbilityType.Poop; // 这个 UI 关心哪一种能力
++
+     [Header("Display Settings")]
+     public string numberPrefix = "";     // 数字前缀，如 "×"
+     public string cdSuffix = "s";        // 冷却时间后缀
+-    public bool showZeroCount = false;   // 是否显示0次数
+-    
++    public bool showZeroCount = false;   // 是否显示 0 次数
++
+     [Header("Debug")]
+     public bool showDebugLogs = true;
+ 
++    // 记录是否收到过 usage 事件（用于 Dash：初始 1，直到首次事件到来）
++    private bool _hasSeenUsageEvent = false;
++
+     private void OnEnable()
+     {
+-        // 只订阅统一的能力事件
+-        GameEventManager.OnAbilityUsageChanged += OnUsageChanged;
+-        GameEventManager.OnAbilityCooldownChanged += OnCooldownChanged;
+-        
+-        // 订阅角色切换事件
+-        if (GameEventManager.Instance != null)
+-        {
+-            GameEventManager.Instance.OnSwitched += OnCharacterSwitched;
+-        }
+-        
+-        // 启动时刷新一次
+-        RefreshCurrentAbility();
++        // 只订阅“带类型”的统一能力事件
++        GameEventManager.OnAbilityUsageChanged   += OnUsageChangedTyped;
++        GameEventManager.OnAbilityCooldownChanged += OnCooldownChangedTyped;
++
++        // 初始显示：Dash 文本=1；其余隐藏或按配置
++        _hasSeenUsageEvent = false;
++        InitDisplay();
+     }
+ 
+     private void OnDisable()
+     {
+-        // 取消订阅事件
+-        GameEventManager.OnAbilityUsageChanged -= OnUsageChanged;
+-        GameEventManager.OnAbilityCooldownChanged -= OnCooldownChanged;
+-        
+-        // 取消订阅角色切换事件
+-        if (GameEventManager.Instance != null)
+-        {
+-            GameEventManager.Instance.OnSwitched -= OnCharacterSwitched;
+-        }
++        GameEventManager.OnAbilityUsageChanged   -= OnUsageChangedTyped;
++        GameEventManager.OnAbilityCooldownChanged -= OnCooldownChangedTyped;
+     }
+ 
+-    // 角色切换回调
+-    private void OnCharacterSwitched()
++    private void InitDisplay()
+     {
+-        if (showDebugLogs) 
+-            Debug.Log($"AbilityUI [{abilityType}]: Character switched, refreshing display");
+-        
+-        RefreshCurrentAbility();
++        // 冷却初始隐藏
++        ApplyCooldown(false, 0f);
++
++        // 次数初始：
++        if (abilityType == AbilityType.Dash)
++        {
++            // Dash 特殊：初始文字=1，直到收到事件再更新
++            ApplyNumber(1, forceShow:true);
++        }
++        else
++        {
++            // 其他能力：初始不确定，先按 0 逻辑处理（通常隐藏）
++            ApplyNumber(0);
++        }
+     }
+ 
+-    // 使用次数变化回调
+-    private void OnUsageChanged(int remainingUses)
++    // —— 次数事件（带能力类型）——
++    private void OnUsageChangedTyped(AbilityType type, int remainingUses)
+     {
+-        if (showDebugLogs) 
+-            Debug.Log($"AbilityUI [{abilityType}]: Usage changed to {remainingUses}");
+-        
+-        UpdateNumberDisplay(remainingUses);
++        if (type != abilityType) return;
++        _hasSeenUsageEvent = true;
++
++        if (showDebugLogs) Debug.Log($"[AbilityUI:{type}] uses = {remainingUses}");
++        ApplyNumber(remainingUses);
+     }
+ 
+-    // 冷却状态变化回调
+-    private void OnCooldownChanged(bool isOnCooldown, float remainingTime)
++    // —— 冷却事件（带能力类型）——
++    private void OnCooldownChangedTyped(AbilityType type, bool isOnCooldown, float remainingTime)
+     {
+-        if (showDebugLogs) 
+-            Debug.Log($"AbilityUI [{abilityType}]: Cooldown changed - OnCD: {isOnCooldown}, Time: {remainingTime:F1}s");
+-        
+-        UpdateCooldownDisplay(isOnCooldown, remainingTime);
++        if (type != abilityType) return;
++
++        if (showDebugLogs) Debug.Log($"[AbilityUI:{type}] cd = {isOnCooldown}, t = {remainingTime:F1}");
++        ApplyCooldown(isOnCooldown, remainingTime);
+     }
+ 
+-    // 刷新当前能力状态
+-    private void RefreshCurrentAbility()
++    // 渲染：次数
++    private void ApplyNumber(int remainingUses, bool forceShow = false)
+     {
+-        PlayerController controller = FindObjectOfType<PlayerController>();
+-        if (controller == null) 
++        if (!numberText) return;
++
++        // Dash：如果还没收到过 usage 事件，并且本次传的是“无次数语义”（<0），保持初始 1 不变
++        if (abilityType == AbilityType.Dash && !_hasSeenUsageEvent && remainingUses < 0)
+         {
+-            if (showDebugLogs) Debug.LogWarning("AbilityUI: No PlayerController found");
++            numberText.gameObject.SetActive(true);
++            numberText.text = numberPrefix + "1";
+             return;
+         }
+-        
+-        // 直接根据能力类型查询对应的能力状态
+-        switch (abilityType)
+-        {
+-            case AbilityType.Poop:
+-                if (controller.abilityA != null)
+-                {
+-                    UpdateNumberDisplay(controller.abilityA.GetRemainingUses());
+-                    UpdateCooldownDisplay(controller.abilityA.IsOnCooldown(), controller.abilityA.GetCooldownRemaining());
+-                }
+-                break;
+-                
+-            case AbilityType.Bomb:
+-                if (controller.abilityC != null)
+-                {
+-                    UpdateNumberDisplay(controller.abilityC.GetRemainingUses());
+-                    UpdateCooldownDisplay(false, 0f); // 需要添加Bomb的冷却状态查询
+-                }
+-                break;
+-                
+-            case AbilityType.Dash:
+-                UpdateNumberDisplay(-1); // Dash没有次数限制，隐藏数字
+-                UpdateCooldownDisplay(false, 0f); // 需要添加Dash的冷却状态查询
+-                break;
+-        }
+-    }
+-
+-    // 更新数字显示
+-    private void UpdateNumberDisplay(int remainingUses)
+-    {
+-        if (numberText == null) return;
+ 
+-        if (remainingUses < 0) // Dash等没有次数限制的能力
++        // 约定：remainingUses < 0 表示“无次数概念”（例如 Dash）
++        if (remainingUses < 0)
+         {
+-            numberText.gameObject.SetActive(false);
++            // Dash：如果事件显式给了负数，说明想隐藏或由你自定义
++            // 这里我们选择：Dash 仍显示（一般显示 1 或者由事件给具体值时显示具体值）
++            // 若你希望事件给负数时隐藏，可以改成：numberText.gameObject.SetActive(false);
++            if (abilityType == AbilityType.Dash)
++            {
++                numberText.gameObject.SetActive(true);
++                // 若负数到来但已收到事件，则维持上一次显示；如果需要可以改成固定 1
++                // 这里简单做法：显示 "1"
++                numberText.text = numberPrefix + "1";
++            }
++            else
++            {
++                numberText.gameObject.SetActive(false);
++            }
++            return;
+         }
+-        else if (remainingUses <= 0 && !showZeroCount)
++
++        // 0 次数是否显示
++        if (remainingUses == 0 && !showZeroCount && !forceShow)
+         {
+             numberText.gameObject.SetActive(false);
+         }
+@@ -131,24 +121,23 @@ public class AbilityUI : MonoBehaviour
+         }
+     }
+ 
+-    // 更新冷却显示
+-    private void UpdateCooldownDisplay(bool isOnCooldown, float remainingTime)
++    // 渲染：冷却
++    private void ApplyCooldown(bool isOnCooldown, float remainingTime)
+     {
+-        if (cdText == null) return;
++        if (!cdText) return;
+ 
+         cdText.gameObject.SetActive(isOnCooldown);
+-        
+-        if (isOnCooldown && remainingTime > 0)
++        if (isOnCooldown)
+         {
+             cdText.text = remainingTime.ToString("F1") + cdSuffix;
+         }
+     }
+ }
+ 
+-// 能力类型枚举
++// 能力类型（保持你现有的定义即可）
+ public enum AbilityType
+ {
+     Poop,
+     Bomb,
+     Dash
+-}
+\ No newline at end of file
++}
+diff --git a/Assets/Script/GameManager/UI/ScoreHUD.cs b/Assets/Script/GameManager/UI/ScoreHUD.cs
+index 4bd5274..54515f3 100644
+--- a/Assets/Script/GameManager/UI/ScoreHUD.cs
++++ b/Assets/Script/GameManager/UI/ScoreHUD.cs
+@@ -12,7 +12,7 @@ public class ScoreHUD : MonoBehaviour
+     {
+         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+         Instance = this;
+-        DontDestroyOnLoad(gameObject);
++        // DontDestroyOnLoad(gameObject);
+ 
+         // 场景加载后强制刷新一次文本（防止事件错过）
+         SceneManager.sceneLoaded += (_, __) => ForceRefresh();
+diff --git a/Assets/Script/GameManager/UI/UIManager.cs b/Assets/Script/GameManager/UI/UIManager.cs
+index df7cdab..d90baae 100644
+--- a/Assets/Script/GameManager/UI/UIManager.cs
++++ b/Assets/Script/GameManager/UI/UIManager.cs
+@@ -31,13 +31,15 @@ public class UIManager : MonoBehaviour
+ 
+     public void ShowSetting()
+     {
+-        HideAllPanels();
++        // HideAllPanels();
++        GameEventManager.Instance.TriggerGamePaused();
+         if (settingUI) settingUI.SetActive(true);
+     }
+ 
+     public void CloseSetting()
+     {
+         if (settingUI) settingUI.SetActive(false);
++        GameEventManager.Instance.TriggerGameResumed();
+     }
+ 
+     public void ShowTimerUI()
+diff --git a/Assets/Script/HealthManager/BirdHealthManager.cs b/Assets/Script/HealthManager/BirdHealthManager.cs
+index 3e7cb48..588b1d8 100644
+--- a/Assets/Script/HealthManager/BirdHealthManager.cs
++++ b/Assets/Script/HealthManager/BirdHealthManager.cs
+@@ -47,6 +47,7 @@ public class BirdHealthManager : MonoBehaviour
+                 _switchSubscribed = true;
+             }
+         }
++        
+     }
+ 
+     private void OnDisable()
+diff --git a/Assets/Script/HealthManager/HealthUIHearts.cs b/Assets/Script/HealthManager/HealthUIHearts.cs
+index 9f7c5f3..b5f33e2 100644
+--- a/Assets/Script/HealthManager/HealthUIHearts.cs
++++ b/Assets/Script/HealthManager/HealthUIHearts.cs
+@@ -6,12 +6,14 @@ public class HealthUIHeartsGlobal : MonoBehaviour
+ {
+     [Header("Refs")]
+     public Transform heartsContainer;   // 放着若干 Image 子物体
++
+     [Header("Sprites")]
+     public Sprite fullHeart;
+     public Sprite emptyHeart;  // 可以为null
+ 
+     [Header("Options")]
+-    public bool useEmptySpriteForRest = false; // 改为false，因为你没有空心素材
++    public bool useEmptySpriteForRest = false; // 没空心素材建议 false
++
+     [Header("Debug")]
+     public bool showDebugLogs = true;
+ 
+@@ -19,6 +21,13 @@ public class HealthUIHeartsGlobal : MonoBehaviour
+ 
+     void Awake()
+     {
++        if (heartsContainer == null)
++        {
++            Debug.LogError("HeartUI: heartsContainer 未设置！");
++            enabled = false;
++            return;
++        }
++
+         // 缓存所有子 Image（顺序按层级）
+         heartImages = heartsContainer.GetComponentsInChildren<Image>(includeInactive: true);
+         if (showDebugLogs) 
+@@ -27,10 +36,11 @@ public class HealthUIHeartsGlobal : MonoBehaviour
+ 
+     void OnEnable()
+     {
++        // 只订阅“当前血量变化”事件，不再查找任何对象
+         GameEventManager.OnHeartCurrentChanged += RefreshCurrent;
+-        
+-        // 进入场景时马上刷新一遍当前激活角色的血量
+-        RefreshCurrentActiveCharacter();
++
++        // 启用时先清空/隐藏（直到第一次事件到来）
++        RefreshCurrent(0);
+     }
+ 
+     void OnDisable()
+@@ -38,35 +48,7 @@ public class HealthUIHeartsGlobal : MonoBehaviour
+         GameEventManager.OnHeartCurrentChanged -= RefreshCurrent;
+     }
+ 
+-    // 刷新当前激活角色的血量显示
+-    private void RefreshCurrentActiveCharacter()
+-    {
+-        // 找到场景中激活的BirdHealthManager
+-        BirdHealthManager[] healthManagers = FindObjectsOfType<BirdHealthManager>();
+-        BirdHealthManager activeManager = null;
+-        
+-        foreach (var hm in healthManagers)
+-        {
+-            if (hm.gameObject.activeInHierarchy && hm.enabled)
+-            {
+-                activeManager = hm;
+-                break;
+-            }
+-        }
+-        
+-        if (activeManager != null)
+-        {
+-            if (showDebugLogs) 
+-                Debug.Log($"HeartUI: Found active health manager with {activeManager.getCurrentHealth()} health");
+-            RefreshCurrent(activeManager.getCurrentHealth());
+-        }
+-        else
+-        {
+-            if (showDebugLogs) 
+-                Debug.LogWarning("HeartUI: No active BirdHealthManager found");
+-        }
+-    }
+-
++    // 只根据“当前血量”渲染，不依赖任何 HealthManager 引用
+     private void RefreshCurrent(int current)
+     {
+         if (heartImages == null || heartImages.Length == 0) 
+@@ -77,7 +59,7 @@ public class HealthUIHeartsGlobal : MonoBehaviour
+ 
+         // 安全夹取
+         current = Mathf.Max(0, current);
+-        
++
+         if (showDebugLogs) 
+             Debug.Log($"HeartUI: Refreshing to show {current} hearts");
+ 
+@@ -110,4 +92,4 @@ public class HealthUIHeartsGlobal : MonoBehaviour
+             }
+         }
+     }
+-}
+\ No newline at end of file
++}

@@ -6,12 +6,14 @@ public class HealthUIHeartsGlobal : MonoBehaviour
 {
     [Header("Refs")]
     public Transform heartsContainer;   // 放着若干 Image 子物体
+
     [Header("Sprites")]
     public Sprite fullHeart;
     public Sprite emptyHeart;  // 可以为null
 
     [Header("Options")]
-    public bool useEmptySpriteForRest = false; // 改为false，因为你没有空心素材
+    public bool useEmptySpriteForRest = false; // 没空心素材建议 false
+
     [Header("Debug")]
     public bool showDebugLogs = true;
 
@@ -19,6 +21,13 @@ public class HealthUIHeartsGlobal : MonoBehaviour
 
     void Awake()
     {
+        if (heartsContainer == null)
+        {
+            Debug.LogError("HeartUI: heartsContainer 未设置！");
+            enabled = false;
+            return;
+        }
+
         // 缓存所有子 Image（顺序按层级）
         heartImages = heartsContainer.GetComponentsInChildren<Image>(includeInactive: true);
         if (showDebugLogs) 
@@ -27,10 +36,11 @@ public class HealthUIHeartsGlobal : MonoBehaviour
 
     void OnEnable()
     {
+        // 只订阅“当前血量变化”事件，不再查找任何对象
         GameEventManager.OnHeartCurrentChanged += RefreshCurrent;
-        
-        // 进入场景时马上刷新一遍当前激活角色的血量
-        RefreshCurrentActiveCharacter();
+
+        // 启用时先清空/隐藏（直到第一次事件到来）
+        RefreshCurrent(0);
     }
 
     void OnDisable()
@@ -38,35 +48,7 @@ public class HealthUIHeartsGlobal : MonoBehaviour
         GameEventManager.OnHeartCurrentChanged -= RefreshCurrent;
     }
 
-    // 刷新当前激活角色的血量显示
-    private void RefreshCurrentActiveCharacter()
-    {
-        // 找到场景中激活的BirdHealthManager
-        BirdHealthManager[] healthManagers = FindObjectsOfType<BirdHealthManager>();
-        BirdHealthManager activeManager = null;
-        
-        foreach (var hm in healthManagers)
-        {
-            if (hm.gameObject.activeInHierarchy && hm.enabled)
-            {
-                activeManager = hm;
-                break;
-            }
-        }
-        
-        if (activeManager != null)
-        {
-            if (showDebugLogs) 
-                Debug.Log($"HeartUI: Found active health manager with {activeManager.getCurrentHealth()} health");
-            RefreshCurrent(activeManager.getCurrentHealth());
-        }
-        else
-        {
-            if (showDebugLogs) 
-                Debug.LogWarning("HeartUI: No active BirdHealthManager found");
-        }
-    }
-
+    // 只根据“当前血量”渲染，不依赖任何 HealthManager 引用
     private void RefreshCurrent(int current)
     {
         if (heartImages == null || heartImages.Length == 0) 
@@ -77,7 +59,7 @@ public class HealthUIHeartsGlobal : MonoBehaviour
 
         // 安全夹取
         current = Mathf.Max(0, current);
-        
+
         if (showDebugLogs) 
             Debug.Log($"HeartUI: Refreshing to show {current} hearts");
 

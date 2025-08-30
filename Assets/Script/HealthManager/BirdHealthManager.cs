@@ -47,6 +47,7 @@ public class BirdHealthManager : MonoBehaviour
                 _switchSubscribed = true;
             }
         }
+        
     }
 
     private void OnDisable()

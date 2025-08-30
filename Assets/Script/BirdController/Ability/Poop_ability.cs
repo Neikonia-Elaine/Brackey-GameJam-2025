@@ -63,11 +63,13 @@ public class AbilityPoop : MonoBehaviour
     }
 
     // 广播当前状态
+    // 广播当前状态
     public void BroadcastCurrentState()
     {
-        GameEventManager.RaiseAbilityUsageChanged(GetRemainingUses());
-        GameEventManager.RaiseAbilityCooldownChanged(isOnCooldown, cooldownRemaining);
+        GameEventManager.RaiseAbilityUsageChanged(AbilityType.Poop, GetRemainingUses());
+        GameEventManager.RaiseAbilityCooldownChanged(AbilityType.Poop, isOnCooldown, cooldownRemaining);
     }
+
     
     private void Update()
     {
@@ -79,7 +81,7 @@ public class AbilityPoop : MonoBehaviour
             // 每0.1秒更新一次UI
             if (Time.time % 0.1f < Time.deltaTime)
             {
-                GameEventManager.RaiseAbilityCooldownChanged(true, cooldownRemaining);
+                GameEventManager.RaiseAbilityCooldownChanged(AbilityType.Poop, true, cooldownRemaining);
             }
         }
     }
@@ -182,7 +184,7 @@ public class AbilityPoop : MonoBehaviour
         currentCooldownUses++;
         
         // 触发使用次数变化事件
-        GameEventManager.RaiseAbilityUsageChanged(GetRemainingUses());
+        GameEventManager.RaiseAbilityUsageChanged(AbilityType.Poop, GetRemainingUses());
         
         // 检查是否需要进入冷却
         if (currentCooldownUses >= usesPerCooldown)
@@ -198,7 +200,7 @@ public class AbilityPoop : MonoBehaviour
         currentCooldownUses = 0; // 重置当前周期使用次数
         
         // 触发冷却开始事件
-        GameEventManager.RaiseAbilityCooldownChanged(true, cooldownRemaining);
+        GameEventManager.RaiseAbilityCooldownChanged(AbilityType.Poop, true, cooldownRemaining);
         
         Debug.Log($"技能进入冷却，持续 {cooldownDuration} 秒");
         StartCoroutine(CooldownCoroutine());
@@ -212,7 +214,7 @@ public class AbilityPoop : MonoBehaviour
         cooldownRemaining = 0f;
         
         // 触发冷却结束事件
-        GameEventManager.RaiseAbilityCooldownChanged(false, 0f);
+        GameEventManager.RaiseAbilityCooldownChanged(AbilityType.Poop, false, 0f);
         
         Debug.Log("技能冷却结束！");
     }
