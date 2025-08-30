@@ -13,7 +13,7 @@ public class GameEventManager : MonoBehaviour
                 // 自动创建实例
                 GameObject go = new GameObject("GameEventManager");
                 _instance = go.AddComponent<GameEventManager>();
-                // DontDestroyOnLoad(go);
+                DontDestroyOnLoad(go);
             }
             return _instance;
         }
@@ -21,14 +21,20 @@ public class GameEventManager : MonoBehaviour
 
     // === 原有游戏事件 ===
     public event Action OnBiscuitCollected;
+
     public event Action OnHumanHit;
+    public event Action OnCarHit;
+    public event Action OnHatUmbrellaHit;
+    public event Action onPlatformHit;
     public static event Action<int> OnHeartCurrentChanged;
     public event Action OnGamePaused;
+
+    public static event Action OnGameResumed; // 如果需要，可以添加恢复事件
     public event Action OnSwitched;
 
     // === 简化的能力事件 ===
-    public static event Action<int> OnAbilityUsageChanged;         // 参数：剩余次数
-    public static event Action<bool, float> OnAbilityCooldownChanged;  // 参数：是否冷却中，剩余时间
+    public static event System.Action<AbilityType, int> OnAbilityUsageChanged;
+    public static event System.Action<AbilityType, bool, float> OnAbilityCooldownChanged;
 
     void Awake()
     {
@@ -52,6 +58,21 @@ public class GameEventManager : MonoBehaviour
         OnHumanHit?.Invoke();
     }
 
+    public void TriggerCarHit()
+    {
+        OnCarHit?.Invoke();
+    }
+
+    public void TriggerHatUmbrellaHit()
+    {
+        OnHatUmbrellaHit?.Invoke();
+    }
+
+    public void TriggerPlatformHit()
+    {
+        onPlatformHit?.Invoke();
+    }
+
     public static void RaiseHeartCurrentChanged(int current)
     {
         OnHeartCurrentChanged?.Invoke(current);
@@ -61,6 +82,11 @@ public class GameEventManager : MonoBehaviour
     {
         OnGamePaused?.Invoke();
     }
+
+    public void TriggerGameResumed()
+    {
+        OnGameResumed?.Invoke();
+    }
     
     public void TriggerSwitched()
     {
@@ -68,13 +94,9 @@ public class GameEventManager : MonoBehaviour
     }
 
     // === 简化的能力事件触发方法 ===
-    public static void RaiseAbilityUsageChanged(int remainingUses)
-    {
-        OnAbilityUsageChanged?.Invoke(remainingUses);
-    }
+    public static void RaiseAbilityUsageChanged(AbilityType type, int remainingUses)
+    => OnAbilityUsageChanged?.Invoke(type, remainingUses);
 
-    public static void RaiseAbilityCooldownChanged(bool isOnCooldown, float remainingTime)
-    {
-        OnAbilityCooldownChanged?.Invoke(isOnCooldown, remainingTime);
-    }
+    public static void RaiseAbilityCooldownChanged(AbilityType type, bool isOnCooldown, float remainingTime)
+        => OnAbilityCooldownChanged?.Invoke(type, isOnCooldown, remainingTime);
 }

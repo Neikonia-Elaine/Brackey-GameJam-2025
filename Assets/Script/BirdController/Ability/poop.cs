@@ -157,6 +157,22 @@ public class Poop : MonoBehaviour
                     
                     // 处理碰撞
                     HandleCollision(config.collisionSprite, config.objectName);
+                    Debug.Log($"Poop碰撞到 {objectName}，切换sprite");
+                    if (config.objectName == "Human")
+                    {
+
+                        GameEventManager.Instance?.TriggerHumanHit();
+                        Debug.Log("触发OnHumanHit事件");
+                    } else if (config.objectName == "Car")
+                    {
+                        GameEventManager.Instance?.TriggerCarHit();
+                        Debug.Log("触发OnCarHit事件");
+                    }
+                    else if (config.objectName == "Hat")
+                    {
+                        GameEventManager.Instance?.TriggerHatUmbrellaHit();
+                        Debug.Log("触发OnHatUmbrellaHit事件");
+                    }
                     found = true;
                     break;
                 }

@@ -48,7 +48,7 @@ public class MySceneManager : MonoBehaviour
     public void Level3SceneLoad()
     {
         TryLoadAdditive(level3Name);
-        levelSceneName = level2Name;
+        levelSceneName = level3Name;
         TimerManager.Instance?.StartCountdown(180);
     }
 

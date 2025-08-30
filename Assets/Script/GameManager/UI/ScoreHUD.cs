@@ -12,7 +12,7 @@ public class ScoreHUD : MonoBehaviour
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
-        DontDestroyOnLoad(gameObject);
+        // DontDestroyOnLoad(gameObject);
 
         // 场景加载后强制刷新一次文本（防止事件错过）
         SceneManager.sceneLoaded += (_, __) => ForceRefresh();

@@ -3292,8 +3292,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   currentScore: 0
-  biscuitScore: 50
+  biscuitScore: 300
   humanScore: 100
+  carScore: 40
+  hatUmbrellaScore: 150
+  platformScore: 200
 --- !u!1 &1851222030
 GameObject:
   m_ObjectHideFlags: 0
