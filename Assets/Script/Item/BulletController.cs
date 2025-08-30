@@ -34,7 +34,7 @@ public class BulletController : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.gameObject.tag == "Ground")
+        if (other.gameObject.tag == "Ground" || other.gameObject.tag == "Wall")
         {
             Destroy(gameObject);
         }
