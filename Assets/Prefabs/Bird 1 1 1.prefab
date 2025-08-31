@@ -105,6 +105,7 @@ MonoBehaviour:
   currentHealth: 5
   damage: 1
   useHookGate: 1
+  hurtSound: {fileID: 0}
 --- !u!114 &514638711460240755
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -409,6 +410,7 @@ MonoBehaviour:
   currentHealth: 3
   damage: 1
   useHookGate: 1
+  hurtSound: {fileID: 8300000, guid: cc92f534e4d89f44ba1c86911bef2870, type: 3}
 --- !u!114 &6356238976554451834
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -627,6 +629,7 @@ MonoBehaviour:
   currentHealth: 3
   damage: 1
   useHookGate: 1
+  hurtSound: {fileID: 0}
 --- !u!114 &1796063673192643667
 MonoBehaviour:
   m_ObjectHideFlags: 0
