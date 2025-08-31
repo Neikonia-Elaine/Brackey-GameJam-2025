@@ -37,6 +37,8 @@ public class AbilityDash : MonoBehaviour
     [SerializeField] private Vector2 downOffset = new Vector2(0f, -0.1f);
     [SerializeField] private LayerMask senseMask;
 
+    public AudioClip dashSound; // 冲刺声音
+
     // 事件
     public static event Action<GameObject> OnDashCollision;
     public static event Action<GameObject> OnDashDestroy;
@@ -229,6 +231,14 @@ public class AbilityDash : MonoBehaviour
 
         // 开始 dash：使用次数=0（单次充能型）
         GameEventManager.RaiseAbilityUsageChanged(0);
+        if (dashSound != null)
+        {
+            AudioManager.Instance.PlaySFX(dashSound);
+        }
+        else
+        {
+            Debug.LogWarning("dashSound 未设置！");
+        }
 
         if (animator != null)
             animator.SetTrigger(dashTrigger);

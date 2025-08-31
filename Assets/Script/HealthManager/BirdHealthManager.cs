@@ -26,6 +26,8 @@ public class BirdHealthManager : MonoBehaviour
     // 防止重复订阅（切换事件）
     private bool _switchSubscribed = false;
 
+    // public AudioClip hurtSound; // 受伤声音
+
     private void Start()
     {
         if (currentHealth <= 0) currentHealth = maxHealth;
@@ -110,6 +112,14 @@ public class BirdHealthManager : MonoBehaviour
 
         // 通知 UI
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
+        // if (hurtSound != null)
+        // {
+        //     AudioManager.Instance.PlaySFX(hurtSound);
+        // }
+        // else
+        // {
+        //     Debug.LogWarning("hurtSound 未设置！");
+        // }
         GameEventManager.RaiseHeartCurrentChanged(currentHealth);
 
         if (currentHealth <= 0)

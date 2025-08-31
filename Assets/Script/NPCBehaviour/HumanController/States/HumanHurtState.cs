@@ -64,6 +64,7 @@ public class HumanHurtState : BaseState
         // 播放hurt动画
         animator.Play("Hurt");
         
+        
         // 受伤时，取消碰撞layer
         foreach (Collider2D collider in physicsColliders)
         {

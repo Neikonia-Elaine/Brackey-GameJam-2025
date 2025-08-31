@@ -24,6 +24,9 @@ public class ScoreManager : MonoBehaviour
     [SerializeField] private int hatUmbrellaScore = 150;
     [SerializeField] private int platformScore = 200;
 
+    public AudioClip levelFinishSound; // 关卡结束声音
+    public AudioClip biscuitCollected; // 收集饼干声音
+
 
 
     void Awake()
@@ -84,6 +87,15 @@ public class ScoreManager : MonoBehaviour
     // 事件处理方法
     private void HandleBiscuitCollected()
     {
+        if (biscuitCollected != null)
+        {
+            AudioManager.Instance.PlaySFX(biscuitCollected);
+        }
+        else
+        {
+            Debug.LogWarning("biscuitCollected 未设置！");
+        }
+
         AddScore(biscuitScore);
     }
 
@@ -94,6 +106,7 @@ public class ScoreManager : MonoBehaviour
 
     private void HandleCarHit()
     {
+        AudioManager.Instance.PlayRandomCarSFX();
         AddScore(carScore);
     }
 
@@ -135,6 +148,14 @@ public class ScoreManager : MonoBehaviour
 
     public void FinishLevel()
     {
+        if (levelFinishSound != null)
+        {
+            AudioManager.Instance.PlaySFX(levelFinishSound);
+        }
+        else
+        {
+            Debug.LogWarning("levelFinishSound 未设置！");
+        }
         OnLevelFinished?.Invoke(currentScore);
         Debug.Log($"关卡结束，最终得分: {currentScore}");
         // 显示关卡结束UI，隐藏游戏内UI

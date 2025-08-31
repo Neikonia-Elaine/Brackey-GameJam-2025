@@ -32,6 +32,8 @@ public class Poop : MonoBehaviour
     private bool canCollide = false; // 是否可以碰撞
     private bool hasCollided = false; // 是否已经碰撞过
 
+    public AudioClip poopSound; // 便便声音
+
     void Start()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
@@ -203,6 +205,16 @@ public class Poop : MonoBehaviour
         else if (targetSprite == null)
         {
             Debug.LogWarning($"碰撞配置 {configName} 的sprite为空！");
+        }
+
+        // 播放声音
+        if (poopSound != null)
+        {
+            AudioManager.Instance.PlaySFX(poopSound);
+        }
+        else
+        {
+            Debug.LogWarning("poopSound 未设置！");
         }
         
         // 延迟销毁

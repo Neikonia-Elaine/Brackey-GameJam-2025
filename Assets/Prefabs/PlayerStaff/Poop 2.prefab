@@ -158,6 +158,7 @@ MonoBehaviour:
   destroyDelay: 1
   ignoreFirstCollision: 1
   ignoreCollisionTime: 0.1
+  poopSound: {fileID: 8300000, guid: 884692bf35e1cad4cbe7b2ab488f4113, type: 3}
 --- !u!50 &5096215385165698197
 Rigidbody2D:
   serializedVersion: 4

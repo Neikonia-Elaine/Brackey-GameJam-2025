@@ -28,6 +28,8 @@ public class CarController : MonoBehaviour
     [Header("Other Config")]
     private Camera mainCamera;
 
+    public AudioClip carInitial; // 车启动声音
+
     private void Awake()
     {
         stateMachine = GetComponent<StateMachine>();
@@ -43,6 +45,14 @@ public class CarController : MonoBehaviour
         InitializeBlackboard();
         InitializeStateMachine();
         stateMachine.RunStateMachine();
+        if (carInitial != null)
+        {
+            AudioManager.Instance.PlaySFX(carInitial);
+        }
+        else
+        {
+            Debug.LogWarning("carInitial 未设置！");
+        }
     }
 
     public void InitializeBlackboard()

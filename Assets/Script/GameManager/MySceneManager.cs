@@ -12,6 +12,9 @@ public class MySceneManager : MonoBehaviour
     public string level2Name = "Level2";
     public string level3Name = "Level3";
 
+    public AudioClip level1Music; // 关卡音乐
+    public AudioClip level2Music; 
+    public AudioClip level3Music; 
     [Header("Options")]
     [Tooltip("加载后把该关卡设为Active Scene（推荐勾上，灯光/Instantiate默认归属到新关卡）")]
     public bool setActiveOnLoad = true;
@@ -34,6 +37,7 @@ public class MySceneManager : MonoBehaviour
         // Timer.SetActive(false);
         GameEventManager.Instance.TriggerGameResumed();
         level1Load = true;
+        AudioManager.Instance.PlayMusic(level1Music);
 
     }
 
@@ -48,6 +52,7 @@ public class MySceneManager : MonoBehaviour
         levelSceneName = level2Name;
         Time.timeScale = 1f;
         GameEventManager.Instance.TriggerGameResumed();
+        AudioManager.Instance.PlayMusic(level2Music);
         Debug.Log("Level2SceneLoad: Timer started for 180 seconds.");
     }
     public void Level3SceneLoad()
@@ -56,6 +61,7 @@ public class MySceneManager : MonoBehaviour
         levelSceneName = level3Name;
         Time.timeScale = 1f;
         GameEventManager.Instance.TriggerGameResumed();
+        AudioManager.Instance.PlayMusic(level3Music);
         TimerManager.Instance?.StartCountdown(180);
     }
 
@@ -80,6 +86,7 @@ public class MySceneManager : MonoBehaviour
         }
 
         Debug.Log($"[CloseLevel] 卸载关卡：{levelSceneName}");
+        AudioManager.Instance.StopMusic();
         var op = SceneManager.UnloadSceneAsync(levelScene);
         levelSceneName = "";
 

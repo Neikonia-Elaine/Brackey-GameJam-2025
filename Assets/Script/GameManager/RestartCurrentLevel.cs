@@ -6,11 +6,18 @@ public class RestartCurrentLevel : MonoBehaviour
 {
     [Header("Scene Names")]
     public string mainSceneName = "MainScene";  // 管理器场景的名字
+
+    public AudioClip restartLevelSound; // 重启关卡声音
     
     // 静态方法 - 重启当前关卡
     public static void RestartLevel()
     {
+        
         RestartCurrentLevel instance = FindObjectOfType<RestartCurrentLevel>();
+        if (instance.restartLevelSound != null)
+        {
+            AudioManager.Instance.PlaySFX(instance.restartLevelSound);
+        }
         if (instance != null)
         {
             instance.StartCoroutine(instance.RestartLevelAsync());

@@ -104,6 +104,7 @@ MonoBehaviour:
   maxHealth: 5
   currentHealth: 5
   damage: 1
+  useHookGate: 1
 --- !u!114 &514638711460240755
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -205,12 +206,27 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dashDistance: 4
   dashDuration: 0.3
+  cooldownDuration: 2
   platformLayer:
     serializedVersion: 2
     m_Bits: 4294967295
   platformDamage: 1
   dashTrigger: dash
   flyTrigger: fly
+  resetCooldownOnSwitch: 1
+  useRealtimeCooldown: 0
+  isDashing: 0
+  isOnCooldown: 0
+  cooldownRemaining: 0
+  dashSenseRadius: 0.5
+  minLookahead: 0.3
+  lookaheadMultiplier: 1.2
+  downLookahead: 0.8
+  downOffset: {x: 0, y: -0.1}
+  senseMask:
+    serializedVersion: 2
+    m_Bits: 0
+  dashSound: {fileID: 8300000, guid: dbea008c27ab58e4dbc49bf998c63c79, type: 3}
 --- !u!1 &1379749769890943060
 GameObject:
   m_ObjectHideFlags: 0
@@ -392,6 +408,7 @@ MonoBehaviour:
   maxHealth: 3
   currentHealth: 3
   damage: 1
+  useHookGate: 1
 --- !u!114 &6356238976554451834
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -498,10 +515,13 @@ MonoBehaviour:
   maxUsageCount: 150
   usesPerCooldown: 5
   cooldownDuration: 3
+  resetCooldownOnSwitch: 1
+  useRealtimeCooldown: 0
   currentUsageCount: 0
   currentCooldownUses: 0
   isOnCooldown: 0
   cooldownRemaining: 0
+  poopSound: {fileID: 8300000, guid: 400c4ed59674ab34ba2ccb111ba21428, type: 3}
 --- !u!1 &4147644867234380158
 GameObject:
   m_ObjectHideFlags: 0
@@ -606,6 +626,7 @@ MonoBehaviour:
   maxHealth: 3
   currentHealth: 3
   damage: 1
+  useHookGate: 1
 --- !u!114 &1796063673192643667
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -710,9 +731,12 @@ MonoBehaviour:
   spawnOffset: {x: 0, y: 0, z: 0}
   maxUses: 5
   cooldownDuration: 2
+  resetCooldownOnSwitch: 0
+  useRealtimeCooldown: 0
   currentUses: 0
   isOnCooldown: 0
   cooldownRemaining: 0
+  bombSound: {fileID: 8300000, guid: 4534ed482b0ba394e9fdc898207880bc, type: 3}
 --- !u!1 &7911135494352024582
 GameObject:
   m_ObjectHideFlags: 0
@@ -808,6 +832,7 @@ MonoBehaviour:
   jumpKey: 32
   switchKey: 9
   enableArrowKeys: 1
+  flySound: {fileID: 8300000, guid: 6e9508c1c330276439a597938238cf48, type: 3}
 --- !u!114 &2439147706774091676
 MonoBehaviour:
   m_ObjectHideFlags: 0

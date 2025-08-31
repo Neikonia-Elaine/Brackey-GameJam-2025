@@ -27,6 +27,8 @@ public class PlayerController : MonoBehaviour
     public KeyCode jumpKey = KeyCode.Space;
     public KeyCode switchKey = KeyCode.Tab;
     public bool enableArrowKeys = true;
+
+    public AudioClip flySound; // 飞行声音
     
     private Rigidbody2D rb;
     private Vector2 inputDirection;
@@ -35,6 +37,8 @@ public class PlayerController : MonoBehaviour
     private int currentCharacter = 0;
 
      private GameObject biscuit; // 用于拾取检测
+
+     
     
     public event Action<BirdHealthManager> OnCharacterSwitchedHealth;
     public static event Action onBiscuitPicked;
@@ -109,6 +113,14 @@ public class PlayerController : MonoBehaviour
             if (Input.GetKey(jumpKey))
             {
                 inputDirection.y = jumpForce;
+                if (flySound != null)
+                {
+                    AudioManager.Instance.PlaySFX(flySound);
+                }
+                else
+                {
+                    Debug.LogWarning("flySound 未设置！");
+                }
                 currentAnimator.SetTrigger("fly");
             }
                 

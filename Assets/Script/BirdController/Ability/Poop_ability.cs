@@ -29,6 +29,8 @@ public class AbilityPoop : MonoBehaviour
     [SerializeField] private bool isOnCooldown = false; // 是否在冷却中
     [SerializeField] private float cooldownRemaining = 0f; // 剩余冷却时间
 
+    public AudioClip poopSound; // 便便声音
+
     // ===== 新增：时间戳 CD =====
     private float cooldownEndTime = -1f; // <0 表示不在CD
     private float _nextUiTickTime = 0f;
@@ -120,6 +122,8 @@ public class AbilityPoop : MonoBehaviour
     // PlayerController 会调用这个方法
     public void UseAbility()
     {
+
+        
         // 检查是否还能使用
         if (!CanUseAbility())
         {
@@ -130,6 +134,16 @@ public class AbilityPoop : MonoBehaviour
         {
             Debug.LogWarning("poopPrefab 未设置！");
             return;
+        }
+
+        // 播放声音
+        if (poopSound != null)
+        {
+            AudioManager.Instance.PlaySFX(poopSound);
+        }
+        else
+        {
+            Debug.LogWarning("poopSound 未设置！");
         }
         
         // 执行生成逻辑

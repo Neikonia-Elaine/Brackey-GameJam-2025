@@ -266,11 +266,13 @@ public class PlayerStateManager : MonoBehaviour
     
     // private void OnTriggerEnter2D(Collider2D other)
     // {
+    //     Debug.Log($"[StateManager] 触发检测到: {other.gameObject.name}");
     //     ProcessCollision(other.gameObject);
     // }
     
     private void OnCollisionEnter2D(Collision2D collision)
     {
+        Debug.Log($"[StateManager] 碰撞检测到: {collision.gameObject.name}");
         ProcessCollision(collision.gameObject);
     }
     

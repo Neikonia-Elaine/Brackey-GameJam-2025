@@ -165,6 +165,7 @@ public class HumanController : MonoBehaviour
     {
         if (other.gameObject.tag == "Shit")
         {
+            AudioManager.Instance.PlayRandomPeopleSFX();
             humanBlackboard.isHurt = true;
         }
     }

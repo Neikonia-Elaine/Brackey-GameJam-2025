@@ -27,6 +27,8 @@ public class AbilityBomb : MonoBehaviour
     [SerializeField] private bool isOnCooldown = false;
     [SerializeField] private float cooldownRemaining = 0f;
 
+    public AudioClip bombSound; // 炸弹声音
+
     // 新增：记录 CD 截止时间戳；未在 CD 时为负
     private float cooldownEndTime = -1f;
 
@@ -116,6 +118,15 @@ public class AbilityBomb : MonoBehaviour
         {
             Debug.LogWarning("bombPrefab 未设置！");
             return;
+        }
+        // 播放声音
+        if (bombSound != null)
+        {
+            AudioManager.Instance.PlaySFX(bombSound);
+        }
+        else
+        {
+            Debug.LogWarning("bombSound 未设置！");
         }
 
         SpawnBomb();
