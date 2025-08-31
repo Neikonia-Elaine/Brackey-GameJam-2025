@@ -124,6 +124,8 @@ MonoBehaviour:
     damageValue: 1
   - enemyName: Car
     damageValue: 5
+  - enemyName: Bullet
+    damageValue: 1
   currentState: 0
   hurtStateDuration: 0.5
   invincibleTime: 1.5
@@ -429,6 +431,8 @@ MonoBehaviour:
     damageValue: 1
   - enemyName: Car
     damageValue: 5
+  - enemyName: Bullet
+    damageValue: 1
   currentState: 0
   hurtStateDuration: 0.5
   invincibleTime: 1.5
@@ -648,6 +652,8 @@ MonoBehaviour:
     damageValue: 1
   - enemyName: Car
     damageValue: 5
+  - enemyName: Bullet
+    damageValue: 1
   currentState: 0
   hurtStateDuration: 0.5
   invincibleTime: 1.5

@@ -12,6 +12,8 @@ TagManager:
   - Boom
   - Bubble
   - Wall
+  - Car
+  - Bullet
   layers:
   - Default
   - TransparentFX

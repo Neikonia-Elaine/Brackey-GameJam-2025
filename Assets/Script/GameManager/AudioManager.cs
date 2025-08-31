@@ -30,7 +30,7 @@ public class AudioManager : MonoBehaviour
     }
 
     // —— 你原有的方法（可保留/合并） ——
-    public void PlayMusic(AudioClip clip, float volume = 0.4f)
+    public void PlayMusic(AudioClip clip, float volume = 0.2f)
     {
         if (clip == null || musicSource == null) return;
         musicSource.clip = clip;

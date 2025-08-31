@@ -263,12 +263,23 @@ public class PlayerStateManager : MonoBehaviour
         else
             _lastKnownHealth = -1;
     }
-    
+
     // private void OnTriggerEnter2D(Collider2D other)
     // {
     //     Debug.Log($"[StateManager] 触发检测到: {other.gameObject.name}");
     //     ProcessCollision(other.gameObject);
     // }
+    
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        // 检查 tag 是否是 Bullet 或 Car
+        if (other.CompareTag("Bullet") || other.CompareTag("Car"))
+        {
+            Debug.Log($"[StateManager] 触发检测到: {other.gameObject.name}, tag: {other.tag}");
+            ProcessCollision(other.gameObject);
+        }
+    }
+
     
     private void OnCollisionEnter2D(Collision2D collision)
     {

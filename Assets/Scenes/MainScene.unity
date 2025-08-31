@@ -1148,7 +1148,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!81 &519420029
 AudioListener:
   m_ObjectHideFlags: 0
@@ -4587,6 +4587,7 @@ MonoBehaviour:
   level3Music: {fileID: 8300000, guid: c0b40cbebc020054fb42b1355edf3359, type: 3}
   setActiveOnLoad: 1
   level1Load: 0
+  Timer: {fileID: 1859892793}
 --- !u!1 &2011824754
 GameObject:
   m_ObjectHideFlags: 0
