@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -12,65 +13,83 @@ public class MySceneManager : MonoBehaviour
     public string level2Name = "Level2";
     public string level3Name = "Level3";
 
-    public AudioClip level1Music; // 关卡音乐
-    public AudioClip level2Music; 
-    public AudioClip level3Music; 
+    [Header("Level Music")]
+    public AudioClip level1Music;
+    public AudioClip level2Music;
+    public AudioClip level3Music;
+
     [Header("Options")]
     [Tooltip("加载后把该关卡设为Active Scene（推荐勾上，灯光/Instantiate默认归属到新关卡）")]
     public bool setActiveOnLoad = true;
 
-    public bool level1Load = false;
+    // 状态
+    public bool level1Load = false;       // 你原有的标记
+    private bool isLoading = false;       // 防止同一时间重复加载
+    private string levelSceneName = "";   // 当前关卡名（用于卸载）
+    private Action _postLoadOnce;         // 场景加载完成后一帧执行的一次性回调
 
-    private bool isLoading = false;
+    // ===== 对外接口 =====
 
-    private string levelSceneName = "";
-    // public GameObject Timer;
-
-    // 绑在按钮上的三个方法
+    // 关卡1：不启用计时器，仅恢复时间/音乐（保持你原先的意图）
     public void Level1SceneLoad()
     {
-        TryLoadAdditive(level1Name);
         levelSceneName = level1Name;
-        Time.timeScale = 1f;
-        Debug.Log("Level1SceneLoad: Time scale set to 1.！！！");
-        // TimerManager.Instance?.StopCountdown();
-        // Timer.SetActive(false);
-        GameEventManager.Instance.TriggerGameResumed();
-        level1Load = true;
-        AudioManager.Instance.PlayMusic(level1Music);
+        _postLoadOnce = () =>
+        {
+            Time.timeScale = 1f;
+            GameEventManager.Instance.TriggerGameResumed();
+            AudioManager.Instance.PlayMusic(level1Music);
+            level1Load = true;
+            Debug.Log("Level1SceneLoad: Time scale set to 1, music started.");
+        };
 
+        TryLoadAdditive(level1Name);
     }
 
     public bool Level1SceneLoadStatus()
     {
         return level1Load;
     }
+
+    // 关卡2：加载完成后一帧开启180s计时
     public void Level2SceneLoad()
     {
-        TryLoadAdditive(level2Name);
-        TimerManager.Instance?.StartCountdown(180);
         levelSceneName = level2Name;
-        Time.timeScale = 1f;
-        GameEventManager.Instance.TriggerGameResumed();
-        AudioManager.Instance.PlayMusic(level2Music);
-        Debug.Log("Level2SceneLoad: Timer started for 180 seconds.");
-    }
-    public void Level3SceneLoad()
-    {
-        TryLoadAdditive(level3Name);
-        levelSceneName = level3Name;
-        Time.timeScale = 1f;
-        GameEventManager.Instance.TriggerGameResumed();
-        AudioManager.Instance.PlayMusic(level3Music);
-        TimerManager.Instance?.StartCountdown(180);
+        _postLoadOnce = () =>
+        {
+            Time.timeScale = 1f;
+            GameEventManager.Instance.TriggerGameResumed();
+            AudioManager.Instance.PlayMusic(level2Music);
+
+            TimerManager.Instance?.StartCountdown(180);
+            Debug.Log("Level2SceneLoad: Timer started for 180 seconds (post-load).");
+        };
+
+        TryLoadAdditive(level2Name);
     }
 
+    // 关卡3：加载完成后一帧开启180s计时
+    public void Level3SceneLoad()
+    {
+        levelSceneName = level3Name;
+        _postLoadOnce = () =>
+        {
+            Time.timeScale = 1f;
+            GameEventManager.Instance.TriggerGameResumed();
+            AudioManager.Instance.PlayMusic(level3Music);
+
+            TimerManager.Instance?.StartCountdown(180);
+            Debug.Log("Level3SceneLoad: Timer started for 180 seconds (post-load).");
+        };
+
+        TryLoadAdditive(level3Name);
+    }
+
+    // 卸载当前关卡
     public void CloseCurrentLevel()
     {
-        if (level1Load)
-        {
-            level1Load = false;
-        }
+        if (level1Load) level1Load = false;
+
         if (string.IsNullOrEmpty(levelSceneName))
         {
             Debug.LogWarning("[CloseLevel] currentLevelName 为空，无需卸载。");
@@ -87,6 +106,7 @@ public class MySceneManager : MonoBehaviour
 
         Debug.Log($"[CloseLevel] 卸载关卡：{levelSceneName}");
         AudioManager.Instance.StopMusic();
+
         var op = SceneManager.UnloadSceneAsync(levelScene);
         levelSceneName = "";
 
@@ -101,16 +121,19 @@ public class MySceneManager : MonoBehaviour
         }
     }
 
-    // 仅负责Additive加载；不卸载、不重启
+    // ===== 内部：仅负责Additive加载；不卸载、不重启 =====
+
     private void TryLoadAdditive(string sceneName)
     {
         if (isLoading) return;
 
-        // 已经加载过就不重复加载，避免叠一堆
+        // 已经加载过就不重复加载：但仍需要把“后置回调”在下一帧触发一次
         var s = SceneManager.GetSceneByName(sceneName);
         if (s.IsValid() && s.isLoaded)
         {
             if (setActiveOnLoad) SceneManager.SetActiveScene(s);
+            // 仍然要把 postLoad 放到下一帧执行，确保UI订阅完成
+            if (_postLoadOnce != null) StartCoroutine(InvokePostLoadNextFrame());
             return;
         }
 
@@ -135,6 +158,21 @@ public class MySceneManager : MonoBehaviour
         if (setActiveOnLoad && loaded.IsValid())
             SceneManager.SetActiveScene(loaded);
 
+        // 等一帧，保证新场景里 Awake/OnEnable/Start 都走完（UI完成事件订阅）
+        yield return null;
+
+        // 执行一次性后置初始化
+        _postLoadOnce?.Invoke();
+        _postLoadOnce = null;
+
         isLoading = false;
+    }
+
+    private IEnumerator InvokePostLoadNextFrame()
+    {
+        // 与 LoadAdditive 的完成路径保持一致：把后置初始化延到下一帧
+        yield return null;
+        _postLoadOnce?.Invoke();
+        _postLoadOnce = null;
     }
 }

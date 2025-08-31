@@ -827,7 +827,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 5
   jumpForce: 25
-  switchHeight: 0.5
+  switchHeight: -2
   characterA: {fileID: 2902583182479904554}
   characterB: {fileID: 1096131585223804770}
   characterC: {fileID: 4147644867234380158}

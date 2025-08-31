@@ -31,6 +31,7 @@ public class UIManager : MonoBehaviour
         HideAllPanels();
         if (bakcground) bakcground.SetActive(true);
         if (levelSelectionUI) levelSelectionUI.SetActive(true);
+        sceneManager?.CloseCurrentLevel();
     }
 
     public void ShowSetting()
