@@ -53,7 +53,7 @@ public class HealthUIHeartsGlobal : MonoBehaviour
         RefreshCurrentActiveCharacter();
         
         // 开始定期检查无敌状态
-        StartInvincibilityCheck();
+        // StartInvincibilityCheck();
     }
 
     void OnDisable()
@@ -79,44 +79,44 @@ public class HealthUIHeartsGlobal : MonoBehaviour
         }
     }
 
-    private void StartInvincibilityCheck()
-    {
-        if (invincibilityCheckCoroutine != null)
-        {
-            StopCoroutine(invincibilityCheckCoroutine);
-        }
-        invincibilityCheckCoroutine = StartCoroutine(CheckInvincibilityStatus());
-    }
+    // private void StartInvincibilityCheck()
+    // {
+    //     if (invincibilityCheckCoroutine != null)
+    //     {
+    //         StopCoroutine(invincibilityCheckCoroutine);
+    //     }
+    //     invincibilityCheckCoroutine = StartCoroutine(CheckInvincibilityStatus());
+    // }
 
     // 定期检查无敌状态的协程
-    private System.Collections.IEnumerator CheckInvincibilityStatus()
-    {
-        while (true)
-        {
-            bool newInvincibilityState = GetCurrentInvincibilityStatus();
+    // private System.Collections.IEnumerator CheckInvincibilityStatus()
+    // {
+    //     while (true)
+    //     {
+    //         // bool newInvincibilityState = GetCurrentInvincibilityStatus();
             
-            if (newInvincibilityState != isInvincible)
-            {
-                isInvincible = newInvincibilityState;
-                if (showDebugLogs)
-                    Debug.Log($"HeartUI: 检测到无敌状态变化: {isInvincible}");
-                UpdateInvincibilityVisuals();
-            }
+    //         if (newInvincibilityState != isInvincible)
+    //         {
+    //             isInvincible = newInvincibilityState;
+    //             if (showDebugLogs)
+    //                 Debug.Log($"HeartUI: 检测到无敌状态变化: {isInvincible}");
+    //             UpdateInvincibilityVisuals();
+    //         }
             
-            yield return new WaitForSeconds(checkInvincibilityInterval);
-        }
-    }
+    //         yield return new WaitForSeconds(checkInvincibilityInterval);
+    //     }
+    // }
 
     // 获取当前无敌状态
-    private bool GetCurrentInvincibilityStatus()
-    {
-        if (currentStateManager == null)
-        {
-            FindCurrentStateManager();
-        }
+    // private bool GetCurrentInvincibilityStatus()
+    // {
+    //     if (currentStateManager == null)
+    //     {
+    //         FindCurrentStateManager();
+    //     }
         
-        return currentStateManager != null ? currentStateManager.IsInvincible : false;
-    }
+    //     return currentStateManager != null ? currentStateManager.IsInvincible : false;
+    // }
 
     private void FindCurrentStateManager()
     {
@@ -230,12 +230,12 @@ public class HealthUIHeartsGlobal : MonoBehaviour
         FindCurrentStateManager();
         
         // 立即检查一次无敌状态
-        bool currentInvincibility = GetCurrentInvincibilityStatus();
-        if (currentInvincibility != isInvincible)
-        {
-            isInvincible = currentInvincibility;
-            UpdateInvincibilityVisuals();
-        }
+        // bool currentInvincibility = GetCurrentInvincibilityStatus();
+        // if (currentInvincibility != isInvincible)
+        // {
+        //     isInvincible = currentInvincibility;
+        //     UpdateInvincibilityVisuals();
+        // }
     }
 
     private void RefreshCurrent(int current)
@@ -308,43 +308,43 @@ public class HealthUIHeartsGlobal : MonoBehaviour
         RefreshCurrentActiveCharacter();
     }
 
-    // 调试方法
-    [ContextMenu("强制检查无敌状态")]
-    private void DebugCheckInvincibility()
-    {
-        bool currentInvincibility = GetCurrentInvincibilityStatus();
-        Debug.Log($"HeartUI Debug: 当前无敌状态 = {currentInvincibility}, UI记录的无敌状态 = {isInvincible}");
+    // // 调试方法
+    // [ContextMenu("强制检查无敌状态")]
+    // private void DebugCheckInvincibility()
+    // {
+    //     // bool currentInvincibility = GetCurrentInvincibilityStatus();
+    //     Debug.Log($"HeartUI Debug: 当前无敌状态 = {currentInvincibility}, UI记录的无敌状态 = {isInvincible}");
         
-        if (currentStateManager != null)
-        {
-            Debug.Log($"HeartUI Debug: StateManager无敌状态 = {currentStateManager.IsInvincible}");
-        }
-        else
-        {
-            Debug.Log("HeartUI Debug: 没有找到StateManager");
-        }
-    }
+    //     if (currentStateManager != null)
+    //     {
+    //         Debug.Log($"HeartUI Debug: StateManager无敌状态 = {currentStateManager.IsInvincible}");
+    //     }
+    //     else
+    //     {
+    //         Debug.Log("HeartUI Debug: 没有找到StateManager");
+    //     }
+    // }
 
-    // GUI调试显示
-    void OnGUI()
-    {
-        if (!Application.isPlaying || !showDebugLogs) return;
+    // // GUI调试显示
+    // void OnGUI()
+    // {
+    //     if (!Application.isPlaying || !showDebugLogs) return;
         
-        GUILayout.BeginArea(new Rect(320, 10, 250, 100));
-        GUILayout.Label($"HeartUI无敌状态: {isInvincible}");
-        if (currentStateManager != null)
-        {
-            GUILayout.Label($"StateManager无敌: {currentStateManager.IsInvincible}");
-        }
-        else
-        {
-            GUILayout.Label("StateManager: 未找到");
-        }
+    //     GUILayout.BeginArea(new Rect(320, 10, 250, 100));
+    //     GUILayout.Label($"HeartUI无敌状态: {isInvincible}");
+    //     if (currentStateManager != null)
+    //     {
+    //         GUILayout.Label($"StateManager无敌: {currentStateManager.IsInvincible}");
+    //     }
+    //     else
+    //     {
+    //         GUILayout.Label("StateManager: 未找到");
+    //     }
         
-        if (GUILayout.Button("强制刷新UI"))
-        {
-            ForceRefresh();
-        }
-        GUILayout.EndArea();
-    }
+    //     if (GUILayout.Button("强制刷新UI"))
+    //     {
+    //         ForceRefresh();
+    //     }
+    //     GUILayout.EndArea();
+    // }
 }

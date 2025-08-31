@@ -154,7 +154,6 @@ public class PlayerStateManager : MonoBehaviour
 
         Debug.Log($"[StateManager] 发出伤害请求: {damageAmount}, 来源: {damageSource?.name ?? "Unknown"}");
         OnDamageRequested?.Invoke(damageAmount, this.gameObject, damageSource);
-        // 注意：不在这里切换到 Hurt，由 OnHealthChanged 中“检测到降血”再进入 Hurt
     }
     
     // 供 HealthManager 作为总闸调用
@@ -265,15 +264,15 @@ public class PlayerStateManager : MonoBehaviour
             _lastKnownHealth = -1;
     }
     
-    private void OnTriggerEnter2D(Collider2D other)
-    {
-        ProcessCollision(other.gameObject);
-    }
-    
-    // private void OnCollisionEnter2D(Collision2D collision)
+    // private void OnTriggerEnter2D(Collider2D other)
     // {
-    //     ProcessCollision(collision.gameObject);
+    //     ProcessCollision(other.gameObject);
     // }
+    
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        ProcessCollision(collision.gameObject);
+    }
     
     private void ProcessCollision(GameObject other)
     {

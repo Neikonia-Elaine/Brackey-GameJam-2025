@@ -84,9 +84,9 @@ public class BirdHealthManager : MonoBehaviour
     }
 
     private void OnDamageRequestedHandler(int amount, GameObject target, GameObject source) {
-    if (target == this.gameObject) {
+    // if (target == this.gameObject) {
         ApplyDamage(amount, source); // 这里会先经过 CanTakeDamageHook 总闸
-    }
+    // }
 }
 
     /// <summary>
