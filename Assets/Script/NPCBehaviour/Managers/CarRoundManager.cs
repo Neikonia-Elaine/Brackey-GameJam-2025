@@ -16,6 +16,8 @@ public class CarRoundManager : MonoBehaviour
     
     private Vector2 currentTarget; // 当前目标点
     private float waitTimer = 0f; // 等待计时器
+
+    private GameObject bubble;
     
     void Start()
     {
@@ -28,6 +30,8 @@ public class CarRoundManager : MonoBehaviour
         // 设置初始位置为点A
         transform.position = pointA;
         currentTarget = pointB;
+
+        bubble = transform.GetChild(2).gameObject;
     }
 
     void Update()
@@ -47,12 +51,20 @@ public class CarRoundManager : MonoBehaviour
                     transform.localScale = Vector3.Scale(transform.localScale, new Vector3(-1, 1, 1));
                     currentTarget = pointA;
                     isMovingToB = false;
+                    if (bubble != null)
+                    {
+                        bubble.transform.localScale = Vector3.Scale(bubble.transform.localScale, new Vector3(-1, 1, 1));
+                    }
                 }
                 else
                 {
                     transform.localScale = Vector3.Scale(transform.localScale, new Vector3(-1, 1, 1));
                     currentTarget = pointB;
                     isMovingToB = true;
+                    if (bubble != null)
+                    {
+                        bubble.transform.localScale = Vector3.Scale(bubble.transform.localScale, new Vector3(-1, 1, 1));
+                    }
                 }
             }
         }

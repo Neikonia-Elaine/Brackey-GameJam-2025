@@ -19,7 +19,7 @@ public class HatController : MonoBehaviour
         parent = transform.parent.gameObject;
         rb = GetComponent<Rigidbody2D>();
         colliders = GetComponents<Collider2D>();
-        offset = new Vector3(0f, 2f, -1f);
+        offset = new Vector3(0f, 1.6f, -1f);
         
         // 订阅Dash碰撞事件
         AbilityDash.OnDashCollision += OnDashHit;
