@@ -2,6 +2,7 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 
+// 角色状态枚举
 public enum PlayerState
 {
     Normal,
@@ -10,84 +11,94 @@ public enum PlayerState
     Walk
 }
 
+// 敌人配置
 [System.Serializable]
 public class EnemyConfig
 {
-    public string enemyName;
-    public int damageValue = 1;
+    public string enemyName;        // 敌人名字
+    public int damageValue = 1;     // 伤害值
 }
 
+// 统一的角色状态管理器
 public class PlayerStateManager : MonoBehaviour
 {
+    private bool _initialized = false;
+
     [Header("References")]
     public BirdHealthManager healthManager;
-
+    
     [Header("Enemy Configuration")]
     public List<EnemyConfig> enemyList = new List<EnemyConfig>()
     {
         new EnemyConfig { enemyName = "Human", damageValue = 1 },
         new EnemyConfig { enemyName = "Car", damageValue = 5 },
     };
-
+    
     [Header("State")]
     public PlayerState currentState = PlayerState.Normal;
-
-    [Header("Settings")]
-    public float hurtStateDuration = 0.5f;
-    public float invincibleTime = 1.5f;
-
-    // 无敌状态
-    [SerializeField] private bool isInvincible = false;
-    [SerializeField] private float invincibilityTimer = 0f;
     
-    private Coroutine invulnCoro;
-    private int lastHitFrame = -999999;
-    private Dictionary<string, int> enemyDamageDict;
+    [Header("Settings")]
+    public float hurtStateDuration = 0.5f;  // 受伤状态持续时间（未使用协程）
+    public float invincibleTime = 1.5f;     // 无敌时间（未使用协程）
+    private bool isInvincible = false;
 
-    public bool IsInvincible => isInvincible;
+    private bool currentInvincible
+    {
+        get => isInvincible;
+        set
+        {
+            isInvincible = value;
+            Debug.Log($"[StateManager] 无敌状态更新: {isInvincible}");
+        }
+    }  
+    
+    // 状态变化事件
     public event Action<PlayerState> OnStateChanged;
 
+    // ✅ 新增：统一伤害请求事件（不直接扣血）
+    // 参数：damageAmount, target(=被打到的对象，一般是自己), damageSource(攻击源/碰撞对方)
+    public static event Action<int, GameObject, GameObject> OnDamageRequested;
+    
+    // 用于快速查找的字典
+    private Dictionary<string, int> enemyDamageDict;
+
+    // 跟踪上一次已知血量，用于在 OnHealthChanged 中判断是否“降血”
+    private int _lastKnownHealth = -1;
+    
     private void Awake()
     {
-        if (healthManager == null)
-            healthManager = GetComponent<BirdHealthManager>();
         BuildEnemyDictionary();
     }
-
+    
     private void OnEnable()
     {
-        ResetState(); // 现在会保护无敌状态
-        
-        // 订阅事件
-        if (GameEventManager.Instance != null)
-        {
-            GameEventManager.Instance.OnHumanHit += HandleHumanHit;
-        }
+        // ResetState();
     }
-
-    private void OnDisable()
-    {
-        if (GameEventManager.Instance != null)
-        {
-            GameEventManager.Instance.OnHumanHit -= HandleHumanHit;
-        }
-
-        if (invulnCoro != null)
-        {
-            StopCoroutine(invulnCoro);
-            invulnCoro = null;
-        }
-    }
-
+    
     private void Start()
     {
+        if (!_initialized)
+        {
+            ResetState();  
+            _initialized = true;
+        }
+        if (healthManager == null)
+            healthManager = GetComponent<BirdHealthManager>();
+            
         if (healthManager != null)
+        {
             healthManager.OnHealthChanged += HandleHealthChanged;
-
+            // 由状态机提供总闸：死亡或无敌时不允许扣血
+            healthManager.CanTakeDamageHook = AllowDamageByState;
+            // 初始化上一帧血量
+            _lastKnownHealth = healthManager.getCurrentHealth();
+        }
+        
         currentState = PlayerState.Normal;
-        // 不重置无敌状态，保持默认值
+        isInvincible = false;
+        Debug.Log("[StateManager] 初始化状态: Normal");
     }
-
+    
     private void BuildEnemyDictionary()
     {
         enemyDamageDict = new Dictionary<string, int>();
@@ -96,182 +107,206 @@ public class PlayerStateManager : MonoBehaviour
             if (!string.IsNullOrEmpty(enemy.enemyName))
             {
                 enemyDamageDict[enemy.enemyName] = enemy.damageValue;
+                Debug.Log($"[StateManager] 注册敌人: {enemy.enemyName} 伤害值: {enemy.damageValue}");
             }
         }
     }
-
-    // ====== 碰撞检测 ======
-    private void OnTriggerEnter2D(Collider2D other)
+    
+    public void AddEnemy(string enemyName, int damageValue)
     {
-        ProcessCollision(other.gameObject);
-    }
-
-    private void ProcessCollision(GameObject other)
-    {
-        // 简单检查：无敌就直接返回
-        if (isInvincible)
+        var existingEnemy = enemyList.Find(e => e.enemyName == enemyName);
+        if (existingEnemy != null)
         {
-            Debug.Log($"[StateManager] ★★★ 无敌阻挡碰撞 ★★★ {other.name}");
-            return;
-        }
-
-        // 匹配敌人名称
-        string objectName = other.name.Replace("(Clone)", "").Trim();
-        
-        foreach (var enemy in enemyList)
-        {
-            if (objectName.Contains(enemy.enemyName))
-            {
-                Debug.Log($"[StateManager] 敌人碰撞: {objectName}, 伤害: {enemy.damageValue}");
-                TakeDamage(enemy.damageValue);
-                break;
-            }
-        }
-    }
-
-    // ====== 受伤逻辑 ======
-    public void TakeDamage(int damageAmount)
-    {
-        // 再次检查无敌
-        if (isInvincible)
-        {
-            Debug.Log("[StateManager] ★★★ TakeDamage中无敌阻挡 ★★★");
-            return;
-        }
-
-        Debug.Log($"[StateManager] 确认受伤: {damageAmount}");
-
-        // 扣血
-        if (healthManager != null)
-        {
-            healthManager.SetDamage(damageAmount);
-            healthManager.TakeDamage();
-        }
-
-        // 受伤后短暂无敌
-        GrantInvincibility(invincibleTime);
-    }
-
-    // ====== 无敌系统 ======
-    public void GrantInvincibility(float seconds)
-    {
-        if (invulnCoro != null)
-        {
-            StopCoroutine(invulnCoro);
-        }
-        invulnCoro = StartCoroutine(InvulnRoutine(seconds));
-    }
-
-    private System.Collections.IEnumerator InvulnRoutine(float seconds)
-    {
-        isInvincible = true;
-        invincibilityTimer = seconds;
-        Debug.Log($"[StateManager] ★★★ 无敌开始 {seconds}秒 ★★★");
-
-        yield return new WaitForSeconds(seconds);
-
-        isInvincible = false;
-        invincibilityTimer = 0f;
-        invulnCoro = null;
-        Debug.Log("[StateManager] ★★★ 无敌结束 ★★★");
-    }
-
-    // ====== 击中人类事件 ======
-    private void HandleHumanHit()
-    {
-        Debug.Log("[StateManager] ★★★ 击中人类，10秒无敌 ★★★");
-        GrantInvincibility(10f);
-    }
-
-    // ====== 其他必要方法 ======
-    private void HandleHealthChanged(int currentHealth, int maxHealth)
-    {
-        if (currentHealth <= 0)
-        {
-            currentState = PlayerState.Dead;
-            isInvincible = false; // 死亡时清除无敌
-        }
-    }
-
-    // ====== 重置状态方法 ======
-    public void ResetState()
-    {
-        // 保存当前无敌状态
-        bool wasInvincible = isInvincible;
-        float remainingTime = invincibilityTimer;
-
-        // 执行原有的重置逻辑
-        currentState = PlayerState.Normal;
-        StopAllCoroutines();
-        
-        if (invulnCoro != null)
-        {
-            StopCoroutine(invulnCoro);
-            invulnCoro = null;
-        }
-        
-        // 如果之前有无敌状态，恢复它
-        if (wasInvincible && remainingTime > 0f)
-        {
-            Debug.Log($"[StateManager] 重置状态但保持无敌: {remainingTime:F2}s");
-            isInvincible = true;
-            invincibilityTimer = remainingTime;
-            invulnCoro = StartCoroutine(RestoreInvulnRoutine(remainingTime));
+            existingEnemy.damageValue = damageValue;
+            Debug.Log($"[StateManager] 更新敌人: {enemyName} 新伤害值: {damageValue}");
         }
         else
         {
-            isInvincible = false;
-            invincibilityTimer = 0f;
+            enemyList.Add(new EnemyConfig { enemyName = enemyName, damageValue = damageValue });
+            Debug.Log($"[StateManager] 添加新敌人: {enemyName} 伤害值: {damageValue}");
         }
-
-        Debug.Log($"[StateManager] 状态已重置为Normal，无敌保持: {isInvincible}");
+        enemyDamageDict[enemyName] = damageValue;
     }
     
-     public void SetWalkState()
+    public void RemoveEnemy(string enemyName)
+    {
+        enemyList.RemoveAll(e => e.enemyName == enemyName);
+        enemyDamageDict.Remove(enemyName);
+        Debug.Log($"[StateManager] 移除敌人: {enemyName}");
+    }
+    
+    public void SetWalkState()
     {
         ChangeState(PlayerState.Walk);
+    }
+    
+    // —— 只负责发事件，不直接扣血 —— //
+    public void TakeDamage(int damageAmount, GameObject damageSource = null)
+    {
+        Debug.Log($"[StateManager] 尝试受伤 - 当前状态: {currentInvincible}, 无敌: {isInvincible}");
+
+        // 可选：死亡状态直接不发请求（避免噪音）；无敌与否交给 HealthManager 的 Hook 去拦
+        if (currentState == PlayerState.Dead)
+        {
+            Debug.Log("[StateManager] 死亡态，忽略伤害请求");
+            return;
+        }
+
+        Debug.Log($"[StateManager] 发出伤害请求: {damageAmount}, 来源: {damageSource?.name ?? "Unknown"}");
+        OnDamageRequested?.Invoke(damageAmount, this.gameObject, damageSource);
+        // 注意：不在这里切换到 Hurt，由 OnHealthChanged 中“检测到降血”再进入 Hurt
+    }
+    
+    // 供 HealthManager 作为总闸调用
+    private bool AllowDamageByState()
+    {
+        bool allow = (currentState != PlayerState.Dead) && !isInvincible;
+        Debug.Log($"[StateManager] AllowDamageByState = {allow} (state={currentState}, inv={isInvincible})");
+        return allow;
     }
 
     private void ChangeState(PlayerState newState)
     {
-        if (currentState != newState)
+        if (currentState == newState) return;
+        
+        PlayerState oldState = currentState;
+        currentState = newState;
+        
+        Debug.Log($"[StateManager] 状态切换: {oldState} -> {newState}");
+        
+        OnStateChanged?.Invoke(newState);
+        
+        switch (newState)
         {
-            currentState = newState;
-            OnStateChanged?.Invoke(currentState);
-            Debug.Log($"[StateManager] 状态变更为: {currentState}");
+            case PlayerState.Hurt:
+                OnEnterHurtState();
+                break;
+            case PlayerState.Dead:
+                OnEnterDeadState();
+                break;
+            case PlayerState.Normal:
+                OnEnterNormalState();
+                break;
+            case PlayerState.Walk:
+                OnEnterWalkState();
+                break;
         }
     }
-
-    // 恢复无敌状态的协程
-    private System.Collections.IEnumerator RestoreInvulnRoutine(float remainingTime)
+    
+    private void OnEnterWalkState()
     {
-        yield return new WaitForSeconds(remainingTime);
+        Debug.Log("[StateManager] 进入行走状态");
+    }
+    
+    private void OnEnterHurtState()
+    {
+        isInvincible = true;  // 受伤时立即开启无敌
+        Debug.Log("[StateManager] 进入受伤状态，无敌 = true");
+    }
+    
+    private void OnEnterDeadState()
+    {
+        isInvincible = true;  // 死亡保持无敌，避免重复扣血
+        Debug.Log("[StateManager] 进入死亡状态，无敌 = true");
+    }
+    
+    private void OnEnterNormalState()
+    {
+        isInvincible = false; // 恢复正常时关闭无敌
+        Debug.Log("[StateManager] 恢复正常状态，无敌 = false");
+    }
+    
+    private void HandleHealthChanged(int currentHealth, int maxHealth)
+    {
+        Debug.Log($"[StateManager] 血量变化: {currentHealth}/{maxHealth}");
 
+        // ① 掉血：且还没死 → 切到 Hurt（这里才开无敌，避免提前把伤害拦掉）
+        if (_lastKnownHealth >= 0 && currentHealth < _lastKnownHealth && currentHealth > 0 && currentState != PlayerState.Dead)
+        {
+            ChangeState(PlayerState.Hurt);
+        }
+
+        // ② 血量 <= 0 → Dead
+        if (currentHealth <= 0 && currentState != PlayerState.Dead)
+        {
+            ChangeState(PlayerState.Dead);
+        }
+
+        // 记录本次
+        _lastKnownHealth = currentHealth;
+    }
+    
+    public void Heal()
+    {
+        if (healthManager != null)
+        {
+            healthManager.HealFull();
+            
+            if (currentState != PlayerState.Dead)
+            {
+                ChangeState(PlayerState.Normal);
+            }
+        }
+    }
+    
+    public void ResetState()
+    {
+        currentState = PlayerState.Normal;
+        Debug.Log("[StateManager] resetState called");
+        currentInvincible = isInvincible;
         isInvincible = false;
-        invincibilityTimer = 0f;
-        invulnCoro = null;
-        Debug.Log("[StateManager] ★★★ 恢复的无敌时间结束 ★★★");
-    }
+        StopAllCoroutines();
+        Debug.Log("[StateManager] 状态已重置为Normal，无敌 = false");
 
-    // ====== 测试按钮 ======
-    [ContextMenu("测试10秒无敌")]
-    private void TestInvincibility()
-    {
-        GrantInvincibility(10f);
+        // 重置已知血量（避免第一次 OnHealthChanged 误判）
+        if (healthManager != null)
+            _lastKnownHealth = healthManager.getCurrentHealth();
+        else
+            _lastKnownHealth = -1;
     }
-
-    void OnGUI()
+    
+    private void OnTriggerEnter2D(Collider2D other)
     {
-        if (!Application.isPlaying) return;
+        ProcessCollision(other.gameObject);
+    }
+    
+    // private void OnCollisionEnter2D(Collision2D collision)
+    // {
+    //     ProcessCollision(collision.gameObject);
+    // }
+    
+    private void ProcessCollision(GameObject other)
+    {
+        string objectName = other.name;
         
-        GUILayout.BeginArea(new Rect(10, 10, 250, 150));
-        GUILayout.Label($"无敌: {isInvincible}");
-        GUILayout.Label($"剩余: {invincibilityTimer:F1}s");
+        if (objectName.Contains("(Clone)"))
+            objectName = objectName.Replace("(Clone)", "").Trim();
         
-        if (GUILayout.Button("10秒无敌"))
+        if (enemyDamageDict.ContainsKey(objectName))
         {
-            TestInvincibility();
+            int damage = enemyDamageDict[objectName];
+            Debug.Log($"[StateManager] 检测到敌人碰撞: {objectName}, 伤害: {damage}");
+            TakeDamage(damage, other);  // 这里发事件，不直接扣血
         }
-        GUILayout.EndArea();
+        else
+        {
+            foreach (var enemy in enemyList)
+            {
+                if (objectName.Contains(enemy.enemyName))
+                {
+                    Debug.Log($"[StateManager] 检测到敌人碰撞(部分匹配): {objectName} 包含 {enemy.enemyName}, 伤害: {enemy.damageValue}");
+                    TakeDamage(enemy.damageValue, other); // 这里发事件
+                    break;
+                }
+            }
+        }
+    }
+    
+    private void OnValidate()
+    {
+        if (Application.isPlaying)
+        {
+            BuildEnemyDictionary();
+        }
     }
 }

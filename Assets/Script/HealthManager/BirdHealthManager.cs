@@ -1,37 +1,24 @@
 using UnityEngine;
 using System;
 
+[DisallowMultipleComponent]
 public class BirdHealthManager : MonoBehaviour
 {
     [Header("Health Settings")]
     public int maxHealth = 3;          // 最大血量
+    public int currentHealth = 3;      // 当前血量（<=0 则在 Start 时自动设为满血）
 
     [Header("Damage Settings")]
     public int damage = 1;             // 每次受伤扣除的血量（外部也可改）
 
-    // ★★★ 关键修改：使用属性来监控血量变化 ★★★
-    [SerializeField] private int _currentHealth = 3;
-    public int currentHealth 
-    { 
-        get => _currentHealth; 
-        set 
-        {
-            if (_currentHealth != value)
-            {
-                int oldHealth = _currentHealth;
-                _currentHealth = value;
-                Debug.Log($"[BirdHealthManager] ★★★ 血量被直接修改 ★★★ {oldHealth} -> {value}");
-                Debug.Log($"[BirdHealthManager] 修改血量的调用堆栈:\n{System.Environment.StackTrace}");
-                
-                // 触发事件
-                OnHealthChanged?.Invoke(_currentHealth, maxHealth);
-                GameEventManager.RaiseHeartCurrentChanged(_currentHealth);
-            }
-        }
-    }
+    [Header("Options")]
+    public bool useHookGate = true;    // 是否启用状态机总闸（CanTakeDamageHook）
 
     // UI/别的系统订阅这个事件来刷新血条：参数 = (当前血量, 最大血量)
     public event Action<int, int> OnHealthChanged;
+
+    // 全局总闸：由 PlayerStateManager 注入；返回 false 则拦截伤害
+    public Func<bool> CanTakeDamageHook;
 
     // 防止重复订阅（饼干事件）
     private bool _biscuitSubscribed = false;
@@ -39,51 +26,26 @@ public class BirdHealthManager : MonoBehaviour
     // 防止重复订阅（切换事件）
     private bool _switchSubscribed = false;
 
-    // PlayerStateManager 引用（用于获取无敌状态）
-    private PlayerStateManager stateManager;
-
-    private void Awake()
-    {
-        // 获取 PlayerStateManager 组件
-        stateManager = GetComponent<PlayerStateManager>();
-        if (stateManager == null)
-        {
-            Debug.LogWarning($"[BirdHealthManager] No PlayerStateManager found on {gameObject.name}");
-        }
-    }
-
     private void Start()
     {
-        if (_currentHealth <= 0) 
-        {
-            _currentHealth = maxHealth;
-            Debug.Log($"[BirdHealthManager] 初始化血量为满血: {maxHealth}");
-        }
+        if (currentHealth <= 0) currentHealth = maxHealth;
 
         // 启动时刷新一次（双通道：本地事件 + 全局 current-only）
-        OnHealthChanged?.Invoke(_currentHealth, maxHealth);
-        
-        // 延迟一帧发送全局事件，确保UI已初始化
-        StartCoroutine(DelayedUIRefresh());
-    }
-
-    private System.Collections.IEnumerator DelayedUIRefresh()
-    {
-        yield return null; // 等待一帧
-        GameEventManager.RaiseHeartCurrentChanged(_currentHealth);
-        Debug.Log($"[BirdHealthManager] 延迟刷新UI，当前血量: {_currentHealth}");
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
+        GameEventManager.RaiseHeartCurrentChanged(currentHealth);
     }
 
     private void OnEnable()
     {
         // 避免重复订阅（例如对象被多次启用）
+        PlayerStateManager.OnDamageRequested += OnDamageRequestedHandler;
         if (!_biscuitSubscribed)
         {
             PlayerController.onBiscuitPicked += HealFull; // 捡到饼干 → 回满血
             _biscuitSubscribed = true;
         }
-        
-        // 修复：直接在OnEnable时订阅切换事件，而不是懒订阅
+
+        // 直接在 OnEnable 时订阅切换事件
         if (!_switchSubscribed)
         {
             var inst = GameEventManager.Instance;
@@ -97,6 +59,7 @@ public class BirdHealthManager : MonoBehaviour
 
     private void OnDisable()
     {
+        PlayerStateManager.OnDamageRequested -= OnDamageRequestedHandler;
         // 饼干事件退订
         if (_biscuitSubscribed)
         {
@@ -112,54 +75,65 @@ public class BirdHealthManager : MonoBehaviour
         }
     }
 
-    // --- 伤害相关 ---
+    // ========== 伤害相关 ==========
 
-    //（可选）外部设置伤害
+    // （可选）外部设置一次性伤害数值
     public void SetDamage(int d)
     {
         damage = Mathf.Max(0, d);
-        Debug.Log($"[BirdHealthManager] 设置伤害值为: {damage}");
     }
 
-    // 扣血（这个方法应该是唯一扣血入口）
-    public void TakeDamage()
+    private void OnDamageRequestedHandler(int amount, GameObject target, GameObject source) {
+    if (target == this.gameObject) {
+        ApplyDamage(amount, source); // 这里会先经过 CanTakeDamageHook 总闸
+    }
+}
+
+    /// <summary>
+    /// 统一伤害入口（推荐）：
+    /// 任何地方想扣血，调用这个方法；会先经过状态机总闸（CanTakeDamageHook）。
+    /// </summary>
+    public void ApplyDamage(int amount, GameObject source = null)
     {
-        Debug.Log($"[BirdHealthManager] ★★★ TakeDamage被调用! ★★★");
-        Debug.Log($"[BirdHealthManager] TakeDamage调用堆栈:\n{System.Environment.StackTrace}");
-        
-        if (damage <= 0) 
+        if (amount <= 0) return;
+
+        // 总闸：由 PlayerStateManager 注入；false 则不结算
+        if (useHookGate && CanTakeDamageHook != null && !CanTakeDamageHook())
         {
-            Debug.Log($"[BirdHealthManager] 伤害值为0，不扣血");
+            Debug.Log("BirdHealthManager: 被 CanTakeDamageHook 拦截");
             return;
         }
 
-        // 检查无敌状态（额外保护）
-        if (stateManager != null && stateManager.IsInvincible)
-        {
-            Debug.Log("[BirdHealthManager] ★★★ 扣血被无敌阻挡 ★★★");
-            return;
-        }
+        // 真正结算
+        currentHealth = Mathf.Max(0, currentHealth - amount);
+        Debug.Log($"Player took damage: -{amount}, current HP: {currentHealth}");
 
-        int oldHealth = _currentHealth;
-        _currentHealth -= damage;
-        if (_currentHealth < 0) _currentHealth = 0;
+        // 通知 UI
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
+        GameEventManager.RaiseHeartCurrentChanged(currentHealth);
 
-        Debug.Log($"[BirdHealthManager] 正常扣血: -{damage}, 血量: {oldHealth} -> {_currentHealth}");
-        
-        // 触发事件（本地和全局）
-        OnHealthChanged?.Invoke(_currentHealth, maxHealth);
-        GameEventManager.RaiseHeartCurrentChanged(_currentHealth);
-
-        if (_currentHealth <= 0)
+        if (currentHealth <= 0)
         {
             Die();
         }
     }
 
-    // 获取当前血量
+    /// <summary>
+    /// 兼容旧调用：先调 SetDamage(damageAmount) 再调 TakeDamage()
+    /// 现在同样会经过总闸
+    /// </summary>
+    public void TakeDamage()
+    {
+        if (damage <= 0) return;
+
+        // 走到统一入口，确保总闸生效
+        ApplyDamage(damage, null);
+    }
+
+    // 获取当前血量（移除懒订阅逻辑）
     public int getCurrentHealth()
     {
-        return _currentHealth;
+        return currentHealth;
     }
 
     // 收到"切换角色"的全局事件后，把当前血量再广播一次（只发 current）
@@ -168,32 +142,21 @@ public class BirdHealthManager : MonoBehaviour
         // 只有激活的角色才广播
         if (gameObject.activeInHierarchy && enabled)
         {
-            Debug.Log($"[BirdHealthManager] 角色切换事件 - 广播当前血量: {_currentHealth}");
-            GameEventManager.RaiseHeartCurrentChanged(_currentHealth);
+            GameEventManager.RaiseHeartCurrentChanged(currentHealth);
         }
     }
 
-    // --- 治疗相关 ---
+    // ========== 治疗相关 ==========
 
     // 回满血（用于 onBiscuitPicked）
     public void HealFull()
     {
-        Debug.Log($"[BirdHealthManager] HealFull被调用，当前血量: {_currentHealth}");
-        
-        if (_currentHealth >= maxHealth) 
-        {
-            Debug.Log("[BirdHealthManager] 已满血，刷新UI确保同步");
-            OnHealthChanged?.Invoke(_currentHealth, maxHealth);
-            GameEventManager.RaiseHeartCurrentChanged(_currentHealth);
-            return;
-        }
-        
-        int oldHealth = _currentHealth;
-        _currentHealth = maxHealth;
+        if (currentHealth >= maxHealth) return; // 已满则不重复通知
+        currentHealth = maxHealth;
 
-        Debug.Log($"[BirdHealthManager] 治疗满血: {oldHealth} -> {_currentHealth}");
-        OnHealthChanged?.Invoke(_currentHealth, maxHealth);
-        GameEventManager.RaiseHeartCurrentChanged(_currentHealth);
+        Debug.Log($"Player healed to FULL, current HP: {currentHealth}");
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
+        GameEventManager.RaiseHeartCurrentChanged(currentHealth);
     }
 
     // 按量加血（以后需要 +1、+2 可用）
@@ -201,39 +164,22 @@ public class BirdHealthManager : MonoBehaviour
     {
         if (amount <= 0) return;
 
-        int before = _currentHealth;
-        _currentHealth = Mathf.Min(maxHealth, _currentHealth + amount);
+        int before = currentHealth;
+        currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
 
-        Debug.Log($"[BirdHealthManager] 治疗 +{amount}: {before} -> {_currentHealth}");
-        OnHealthChanged?.Invoke(_currentHealth, maxHealth);
-        GameEventManager.RaiseHeartCurrentChanged(_currentHealth);
+        if (currentHealth != before)
+        {
+            Debug.Log($"Player healed +{amount}, current HP: {currentHealth}");
+            OnHealthChanged?.Invoke(currentHealth, maxHealth);
+            GameEventManager.RaiseHeartCurrentChanged(currentHealth);
+        }
     }
 
-    // --- 死亡与关卡重开 ---
+    // ========== 死亡与关卡重开 ==========
 
     public void Die()
     {
-        Debug.Log("[BirdHealthManager] 角色死亡!");
-        
-        // 死亡时也要更新UI（显示0血量）
-        OnHealthChanged?.Invoke(0, maxHealth);
-        GameEventManager.RaiseHeartCurrentChanged(0);
-        
+        Debug.Log("Player Died!");
         RestartCurrentLevel.RestartLevel();
-    }
-
-    // --- 调试方法 ---
-    
-    [ContextMenu("强制扣1血")]
-    private void DebugTakeDamage()
-    {
-        SetDamage(1);
-        TakeDamage();
-    }
-
-    [ContextMenu("显示当前血量")]
-    private void DebugShowHealth()
-    {
-        Debug.Log($"[BirdHealthManager] 当前血量: {_currentHealth}/{maxHealth}");
     }
 }

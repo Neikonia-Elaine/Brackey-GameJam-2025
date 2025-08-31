@@ -70,6 +70,8 @@ public class HumanHurtState : BaseState
             collider.excludeLayers = LayerMask.GetMask("Player", "detector");
         }
 
+        GameEventManager.Instance.TriggerHumanHitbyHuman();
+
         // 掉落Biscuit
         if (items.Contains(Items.Biscuit))
         {
@@ -116,6 +118,7 @@ public class HumanHurtState : BaseState
         foreach (Collider2D collider in physicsColliders)
         {
             collider.excludeLayers = LayerMask.GetMask("Nothing");
+            GameEventManager.Instance.TriggerHumanHitCancel();
         }
     }
 }

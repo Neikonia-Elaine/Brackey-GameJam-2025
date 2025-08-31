@@ -26,6 +26,10 @@ public class GameEventManager : MonoBehaviour
     public event Action OnCarHit;
     public event Action OnHatUmbrellaHit;
     public event Action onPlatformHit;
+
+    public event Action OnHumanHitbyHuman;
+
+    public event Action onHumanHitCancel;
     public static event Action<int> OnHeartCurrentChanged;
     public event Action OnGamePaused;
 
@@ -71,6 +75,16 @@ public class GameEventManager : MonoBehaviour
     public void TriggerPlatformHit()
     {
         onPlatformHit?.Invoke();
+    }
+
+    public void TriggerHumanHitbyHuman()
+    {
+        OnHumanHitbyHuman?.Invoke();
+    }
+
+    public void TriggerHumanHitCancel()
+    {
+        onHumanHitCancel?.Invoke();
     }
 
     public static void RaiseHeartCurrentChanged(int current)
