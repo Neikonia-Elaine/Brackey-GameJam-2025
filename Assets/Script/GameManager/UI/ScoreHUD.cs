@@ -1,38 +1,24 @@
 using UnityEngine;
 using TMPro;
-using UnityEngine.SceneManagement;
 
 public class ScoreHUD : MonoBehaviour
 {
-    public static ScoreHUD Instance { get; private set; }
-
     [SerializeField] private TextMeshProUGUI scoreText;
 
     void Awake()
     {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-        Instance = this;
-        // DontDestroyOnLoad(gameObject);
-
-        // 场景加载后强制刷新一次文本（防止事件错过）
-        SceneManager.sceneLoaded += (_, __) => ForceRefresh();
+        // 容错：若没拖引用，自动找子物体
+        if (scoreText == null) scoreText = GetComponentInChildren<TextMeshProUGUI>(true);
     }
 
     void OnEnable()
     {
         TrySubscribe();
-        // 刚启用时立刻刷新一次
-        ForceRefresh();
+        ForceRefresh(); // 启用时立即刷新
     }
 
     void OnDisable()
     {
-        TryUnsubscribe();
-    }
-
-    void OnDestroy()
-    {
-        if (Instance == this) Instance = null;
         TryUnsubscribe();
     }
 
@@ -55,19 +41,12 @@ public class ScoreHUD : MonoBehaviour
 
     private void ForceRefresh()
     {
-        if (ScoreManager.Instance != null)
-        {
-            UpdateText(ScoreManager.Instance.CurrentScore);
-        }
-        else
-        {
-            UpdateText(0);
-        }
+        int val = (ScoreManager.Instance != null) ? ScoreManager.Instance.CurrentScore : 0;
+        UpdateText(val);
     }
 
     private void UpdateText(int value)
     {
-        if (scoreText != null)
-            scoreText.text = $"{value}";
+        if (scoreText != null) scoreText.text = $"{value}";
     }
 }

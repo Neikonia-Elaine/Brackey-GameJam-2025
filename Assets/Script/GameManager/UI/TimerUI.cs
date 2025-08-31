@@ -63,6 +63,6 @@ public class TimerUI : MonoBehaviour
     {
         UpdateTimerText(0);
         // 需要的话，这里可以触发失败/结算逻辑
-        // ScoreManager.Instance?.FinishLevel();
+        ScoreManager.Instance?.FinishLevel();
     }
 }

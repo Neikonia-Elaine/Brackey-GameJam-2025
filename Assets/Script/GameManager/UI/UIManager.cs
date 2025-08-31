@@ -10,6 +10,8 @@ public class UIManager : MonoBehaviour
     public GameObject bakcground;
     public GameObject TimerUI;
 
+    public GameObject LevelFinishUI;
+
     [Header("Managers")]
     [SerializeField] private MySceneManager sceneManager;
 
@@ -20,6 +22,8 @@ public class UIManager : MonoBehaviour
         if (settingUI) settingUI.SetActive(false);
         if (inGameUI) inGameUI.SetActive(false);
         if (bakcground) bakcground.SetActive(false);
+        // if (TimerUI) TimerUI.SetActive(false);
+        if (LevelFinishUI) LevelFinishUI.SetActive(false);
     }
 
     public void ShowLevelSelector()

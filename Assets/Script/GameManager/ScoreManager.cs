@@ -13,6 +13,9 @@ public class ScoreManager : MonoBehaviour
     [SerializeField] private int currentScore = 0;
     public int CurrentScore => currentScore;
 
+    public GameObject levelFinishUI; // 关卡结束UI
+    public GameObject inGameUI; // 游戏内UI
+
     // 定义各种加分事件的分值
     [Header("加分设置")]
     [SerializeField] private int biscuitScore = 300;
@@ -134,7 +137,25 @@ public class ScoreManager : MonoBehaviour
     {
         OnLevelFinished?.Invoke(currentScore);
         Debug.Log($"关卡结束，最终得分: {currentScore}");
+        // 显示关卡结束UI，隐藏游戏内UI
+        if (inGameUI != null)
+        {
+            inGameUI.SetActive(false); // 隐藏游戏内UI
+        }
+        else
+        {
+            Debug.LogWarning("In-Game UI 未设置！");
+        }
+        if (levelFinishUI != null)
+        {
+            levelFinishUI.SetActive(true); // 显示关卡结束UI
+        }
+        else
+        {
+            Debug.LogWarning("Level Finish UI 未设置！");
+        }
+
         // 如需通关后也清零，可保留；反正场景切换也会清零
-        ResetScore();
+        // ResetScore();
     }
 }
